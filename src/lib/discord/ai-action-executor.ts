@@ -103,7 +103,8 @@ export async function executeAiActions(
           break;
         }
 
-        case 'edit_channel': {
+        case 'edit_channel':
+        case 'rename_channel': {
           const ch = action.targetId
             ? { id: action.targetId }
             : channelMap.get((action.targetName ?? '').toLowerCase());
@@ -114,6 +115,7 @@ export async function executeAiActions(
           if (action.newTopic !== undefined) body.topic = action.newTopic;
 
           await discordApiCall(() => rest.patch(Routes.channel(ch.id), { body }));
+          channelMap = await getChannelMap(guildId);
           results.push(`✅ Edited channel #${action.targetName}`);
           break;
         }
@@ -141,7 +143,8 @@ export async function executeAiActions(
           break;
         }
 
-        case 'edit_category': {
+        case 'edit_category':
+        case 'rename_category': {
           const ch = action.targetId
             ? { id: action.targetId }
             : channelMap.get((action.targetName ?? '').toLowerCase());
@@ -151,6 +154,7 @@ export async function executeAiActions(
           if (action.newName) body.name = action.newName;
 
           await discordApiCall(() => rest.patch(Routes.channel(ch.id), { body }));
+          channelMap = await getChannelMap(guildId);
           results.push(`✅ Renamed category to ${action.newName}`);
           break;
         }

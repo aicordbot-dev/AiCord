@@ -19,17 +19,25 @@ import {
   ApplicationCommandOptionType,
   type APIChatInputApplicationCommandInteraction,
   type APIApplicationCommandInteractionDataStringOption,
+  type APIModalSubmitInteraction,
 } from 'discord-api-types/v10';
 import { connectDB } from '@/lib/db';
 import { BuildJob } from '@/models/BuildJob';
 import { AuditLog } from '@/models/AuditLog';
 import type { RegisteredCommand } from '@/lib/discord/command-registry';
 import { PermissionFlags } from '@/lib/discord/permissions';
+import type { ServerBlueprint } from '@/lib/ai/blueprint.schema';
 import { generateBlueprint, SERVER_TEMPLATES } from '@/lib/ai/generate-blueprint';
-import { buildBlueprintPreviewEmbeds } from '@/lib/discord/blueprint-preview';
+import {
+  buildBlueprintPreviewEmbeds,
+  buildBlueprintActionRows,
+  buildCategorySelectRow,
+  buildChannelSelectRow,
+  buildCancelSelectRow,
+  type BlueprintView,
+} from '@/lib/discord/blueprint-preview';
 import {
   editInteractionResponse,
-  buildConfirmCancelRow,
 } from '@/lib/discord/interaction-response';
 import { errorEmbed, infoEmbed } from '@/lib/discord/embeds';
 
@@ -117,12 +125,13 @@ export async function handleBuildCommand(
       metadata: { jobId: job._id.toString(), blueprintName: blueprint.name },
     });
 
-    // Send preview embed with Confirm/Cancel
-    const previewEmbeds = buildBlueprintPreviewEmbeds(blueprint);
+    // Send preview embed with multi-view action rows
+    const previewEmbeds = buildBlueprintPreviewEmbeds(blueprint, 'structure');
+    const actionRows = buildBlueprintActionRows(job._id.toString(), 'structure');
 
     await editInteractionResponse(token, {
       embeds: previewEmbeds,
-      components: [buildConfirmCancelRow(job._id.toString())],
+      components: actionRows,
     });
   } catch (err) {
     console.error('[/build] Error generating blueprint:', err);
@@ -375,6 +384,229 @@ export async function handleBuildUndo(
       embeds: [errorEmbed('Rollback Failed', 'Some items could not be deleted. Please check your server and remove them manually.')],
       components: [],
     });
+  }
+}
+
+/**
+ * Handle tab switching between preview views: structure, permissions, and roles.
+ */
+export async function handleBuildViewTab(
+  token: string,
+  jobId: string,
+  view: BlueprintView,
+  userId: string,
+): Promise<void> {
+  await connectDB();
+
+  const job = await BuildJob.findById(jobId);
+  if (!job || job.status !== 'preview') {
+    await editInteractionResponse(token, {
+      embeds: [errorEmbed('Invalid Action', 'This build preview is no longer active.')],
+      ephemeral: true,
+    });
+    return;
+  }
+
+  if (job.userId !== userId) {
+    await editInteractionResponse(token, {
+      embeds: [errorEmbed('No Permission', 'Only the person who started this build can change views.')],
+      ephemeral: true,
+    });
+    return;
+  }
+
+  const blueprint = job.blueprint as ServerBlueprint;
+  const previewEmbeds = buildBlueprintPreviewEmbeds(blueprint, view);
+  const actionRows = buildBlueprintActionRows(jobId, view);
+
+  await editInteractionResponse(token, {
+    embeds: previewEmbeds,
+    components: actionRows,
+  });
+}
+
+/**
+ * Present the Category Select Menu for in-place renaming.
+ */
+export async function handleBuildRenameCategoryPrompt(
+  token: string,
+  jobId: string,
+  userId: string,
+): Promise<void> {
+  await connectDB();
+
+  const job = await BuildJob.findById(jobId);
+  if (!job || job.status !== 'preview') {
+    await editInteractionResponse(token, {
+      embeds: [errorEmbed('Invalid Action', 'This build preview is no longer active.')],
+      ephemeral: true,
+    });
+    return;
+  }
+
+  if (job.userId !== userId) {
+    await editInteractionResponse(token, {
+      embeds: [errorEmbed('No Permission', 'Only the person who started this build can rename categories.')],
+      ephemeral: true,
+    });
+    return;
+  }
+
+  const blueprint = job.blueprint as ServerBlueprint;
+  const selectRow = buildCategorySelectRow(jobId, blueprint);
+  const cancelRow = buildCancelSelectRow(jobId);
+
+  await editInteractionResponse(token, {
+    components: [selectRow, cancelRow],
+  });
+}
+
+/**
+ * Present the Channel Select Menu for in-place renaming.
+ */
+export async function handleBuildRenameChannelPrompt(
+  token: string,
+  jobId: string,
+  userId: string,
+): Promise<void> {
+  await connectDB();
+
+  const job = await BuildJob.findById(jobId);
+  if (!job || job.status !== 'preview') {
+    await editInteractionResponse(token, {
+      embeds: [errorEmbed('Invalid Action', 'This build preview is no longer active.')],
+      ephemeral: true,
+    });
+    return;
+  }
+
+  if (job.userId !== userId) {
+    await editInteractionResponse(token, {
+      embeds: [errorEmbed('No Permission', 'Only the person who started this build can rename channels.')],
+      ephemeral: true,
+    });
+    return;
+  }
+
+  const blueprint = job.blueprint as ServerBlueprint;
+  const selectRow = buildChannelSelectRow(jobId, blueprint);
+  const cancelRow = buildCancelSelectRow(jobId);
+
+  await editInteractionResponse(token, {
+    components: [selectRow, cancelRow],
+  });
+}
+
+/**
+ * Handle Modal Submit (InteractionType.MODAL_SUBMIT / type 5) for category or channel renaming.
+ */
+export async function handleBuildModalSubmit(
+  modal: APIModalSubmitInteraction,
+): Promise<void> {
+  await connectDB();
+
+  const customId = modal.data.custom_id;
+  const userId = modal.member?.user?.id ?? modal.user?.id ?? '';
+  const token = modal.token;
+
+  // Format: build_modal_cat:${jobId}:${catIndex} or build_modal_chan:${jobId}:${targetKey}
+  const parts = customId.split(':');
+  const modalType = parts[0];
+  const jobId = parts[1];
+  const targetKey = parts.slice(2).join(':');
+
+  const job = await BuildJob.findById(jobId);
+  if (!job || job.status !== 'preview') {
+    await editInteractionResponse(token, {
+      embeds: [errorEmbed('Invalid Action', 'This build preview is no longer active.')],
+      ephemeral: true,
+    });
+    return;
+  }
+
+  if (job.userId !== userId) {
+    await editInteractionResponse(token, {
+      embeds: [errorEmbed('No Permission', 'Only the person who started this build can customize it.')],
+      ephemeral: true,
+    });
+    return;
+  }
+
+  // Extract input field values
+  const values: Record<string, string> = {};
+  for (const row of modal.data.components ?? []) {
+    for (const comp of (row as unknown as { components?: Array<{ custom_id: string; value: string }> }).components ?? []) {
+      if (comp.custom_id) {
+        values[comp.custom_id] = comp.value?.trim() ?? '';
+      }
+    }
+  }
+
+  const blueprint = job.blueprint as ServerBlueprint;
+
+  if (modalType === 'build_modal_cat') {
+    const catIndex = parseInt(targetKey, 10);
+    const newName = values['new_name'];
+    if (newName && !isNaN(catIndex) && blueprint.categories[catIndex]) {
+      blueprint.categories[catIndex].name = newName;
+      job.markModified('blueprint');
+      await job.save();
+    }
+  } else if (modalType === 'build_modal_chan') {
+    const newName = values['new_name'];
+    const newTopic = values['new_topic'];
+
+    if (newName) {
+      if (targetKey.startsWith('top:')) {
+        const topIndex = parseInt(targetKey.replace('top:', ''), 10);
+        if (
+          !isNaN(topIndex) &&
+          blueprint.topLevelChannels &&
+          blueprint.topLevelChannels[topIndex]
+        ) {
+          blueprint.topLevelChannels[topIndex].name = newName;
+          if (newTopic !== undefined) {
+            blueprint.topLevelChannels[topIndex].topic = newTopic || undefined;
+          }
+          job.markModified('blueprint');
+          await job.save();
+        }
+      } else {
+        const [catIdxStr, chIdxStr] = targetKey.split(':');
+        const catIdx = parseInt(catIdxStr, 10);
+        const chIdx = parseInt(chIdxStr, 10);
+        if (
+          !isNaN(catIdx) &&
+          !isNaN(chIdx) &&
+          blueprint.categories[catIdx]?.channels[chIdx]
+        ) {
+          blueprint.categories[catIdx].channels[chIdx].name = newName;
+          if (newTopic !== undefined) {
+            blueprint.categories[catIdx].channels[chIdx].topic = newTopic || undefined;
+          }
+          job.markModified('blueprint');
+          await job.save();
+        }
+      }
+    }
+  }
+
+  // Refresh preview back to structure view with updated action rows
+  const previewEmbeds = buildBlueprintPreviewEmbeds(blueprint, 'structure');
+  const actionRows = buildBlueprintActionRows(jobId, 'structure');
+
+  try {
+    await editInteractionResponse(token, {
+      embeds: previewEmbeds,
+      components: actionRows,
+    });
+  } catch {
+    if (job.interactionToken && job.interactionToken !== token) {
+      await editInteractionResponse(job.interactionToken, {
+        embeds: previewEmbeds,
+        components: actionRows,
+      }).catch((err) => console.warn('[handleBuildModalSubmit] Edit fallback token failed:', err));
+    }
   }
 }
 

@@ -93,9 +93,29 @@ export interface ButtonComponent {
   disabled?: boolean;
 }
 
+export interface StringSelectOption {
+  label: string;
+  value: string;
+  description?: string;
+  emoji?: { name: string; id?: string };
+  default?: boolean;
+}
+
+export interface StringSelectComponent {
+  type: 3;
+  custom_id: string;
+  options: StringSelectOption[];
+  placeholder?: string;
+  min_values?: number;
+  max_values?: number;
+  disabled?: boolean;
+}
+
+export type MessageComponent = ButtonComponent | StringSelectComponent;
+
 export interface ActionRow {
   type: 1;
-  components: ButtonComponent[];
+  components: (ButtonComponent | StringSelectComponent)[];
 }
 
 export function buildButton(options: {
@@ -117,10 +137,10 @@ export function buildButton(options: {
   };
 }
 
-export function buildActionRow(...components: ButtonComponent[]): ActionRow {
+export function buildActionRow(...components: (ButtonComponent | StringSelectComponent)[]): ActionRow {
   return {
     type: 1,
-    components: components.slice(0, 5), // Max 5 buttons per row
+    components: components.slice(0, 5), // Max 5 items per row (1 select or up to 5 buttons)
   };
 }
 

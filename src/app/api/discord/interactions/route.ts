@@ -22,6 +22,7 @@ import {
 import type {
   APIChatInputApplicationCommandInteraction,
   APIMessageComponentInteraction,
+  APIModalSubmitInteraction,
 } from 'discord-api-types/v10';
 import { env } from '@/lib/env';
 import {
@@ -122,9 +123,147 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       const customId = component.data.custom_id;
       const userId = component.member?.user?.id ?? component.user?.id ?? '';
 
+      // Direct synchronous response for select menus that trigger Modals
+      if (customId.startsWith('build_sel_cat:')) {
+        const jobId = customId.split(':')[1];
+        const selectedIdx = (component.data as unknown as { values?: string[] }).values?.[0] ?? '0';
+        let currentName = '';
+
+        try {
+          const { connectDB } = await import('@/lib/db');
+          const { BuildJob } = await import('@/models/BuildJob');
+          await connectDB();
+          const job = await BuildJob.findById(jobId);
+          const blueprint = job?.blueprint as import('@/lib/ai/blueprint.schema').ServerBlueprint | undefined;
+          const idx = parseInt(selectedIdx, 10);
+          if (blueprint && !isNaN(idx) && blueprint.categories[idx]) {
+            currentName = blueprint.categories[idx].name;
+          }
+        } catch (err) {
+          console.warn('[Interactions] Could not pre-fetch category name for modal:', err);
+        }
+
+        return NextResponse.json({
+          type: 9, // APPLICATION_MODAL
+          data: {
+            custom_id: `build_modal_cat:${jobId}:${selectedIdx}`,
+            title: 'Rename Category',
+            components: [
+              {
+                type: 1,
+                components: [
+                  {
+                    type: 4,
+                    custom_id: 'new_name',
+                    label: 'Category Name',
+                    style: 1, // Short
+                    min_length: 1,
+                    max_length: 100,
+                    value: currentName,
+                    required: true,
+                  },
+                ],
+              },
+            ],
+          },
+        });
+      }
+
+      if (customId.startsWith('build_sel_chan:')) {
+        const jobId = customId.split(':')[1];
+        const targetKey = (component.data as unknown as { values?: string[] }).values?.[0] ?? '';
+        let currentName = '';
+        let currentTopic = '';
+
+        try {
+          const { connectDB } = await import('@/lib/db');
+          const { BuildJob } = await import('@/models/BuildJob');
+          await connectDB();
+          const job = await BuildJob.findById(jobId);
+          const blueprint = job?.blueprint as import('@/lib/ai/blueprint.schema').ServerBlueprint | undefined;
+          if (blueprint && targetKey) {
+            if (targetKey.startsWith('top:')) {
+              const topIdx = parseInt(targetKey.replace('top:', ''), 10);
+              const ch = blueprint.topLevelChannels?.[topIdx];
+              if (ch) {
+                currentName = ch.name;
+                currentTopic = ch.topic ?? '';
+              }
+            } else {
+              const [catIdxStr, chIdxStr] = targetKey.split(':');
+              const catIdx = parseInt(catIdxStr, 10);
+              const chIdx = parseInt(chIdxStr, 10);
+              const ch = blueprint.categories?.[catIdx]?.channels?.[chIdx];
+              if (ch) {
+                currentName = ch.name;
+                currentTopic = ch.topic ?? '';
+              }
+            }
+          }
+        } catch (err) {
+          console.warn('[Interactions] Could not pre-fetch channel details for modal:', err);
+        }
+
+        return NextResponse.json({
+          type: 9, // APPLICATION_MODAL
+          data: {
+            custom_id: `build_modal_chan:${jobId}:${targetKey}`,
+            title: 'Rename Channel',
+            components: [
+              {
+                type: 1,
+                components: [
+                  {
+                    type: 4,
+                    custom_id: 'new_name',
+                    label: 'Channel Name',
+                    style: 1,
+                    min_length: 1,
+                    max_length: 100,
+                    value: currentName,
+                    required: true,
+                  },
+                ],
+              },
+              {
+                type: 1,
+                components: [
+                  {
+                    type: 4,
+                    custom_id: 'new_topic',
+                    label: 'Channel Topic (optional)',
+                    style: 2, // Paragraph
+                    max_length: 1024,
+                    value: currentTopic,
+                    required: false,
+                  },
+                ],
+              },
+            ],
+          },
+        });
+      }
+
+      // Default async handling for other components
       handleComponentAsync(component, customId, userId).catch((err) => {
         console.error(`[Interactions] Error handling component "${customId}":`, err);
       });
+
+      return NextResponse.json(DEFERRED_UPDATE_MESSAGE);
+    }
+
+    // ─── Modal Submit (type 5) ─────────────────────────────────────────────
+    if (type === (InteractionType as unknown as { MODAL_SUBMIT?: number }).MODAL_SUBMIT || type === 5) {
+      const modal = interaction as unknown as APIModalSubmitInteraction;
+      const customId = modal.data?.custom_id ?? '';
+
+      if (customId.startsWith('build_modal_')) {
+        const { handleBuildModalSubmit } = await import('@/commands/build');
+        handleBuildModalSubmit(modal).catch((err) => {
+          console.error('[Interactions] Error handling build modal submit:', err);
+        });
+        return NextResponse.json(DEFERRED_UPDATE_MESSAGE);
+      }
 
       return NextResponse.json(DEFERRED_UPDATE_MESSAGE);
     }
@@ -173,6 +312,25 @@ async function handleComponentAsync(
       const jobId = rest[0];
       const { handleBuildUndo } = await import('@/commands/build');
       await handleBuildUndo(token, jobId, userId);
+      break;
+    }
+    case 'build_view': {
+      const view = rest[0] as import('@/lib/discord/blueprint-preview').BlueprintView;
+      const jobId = rest[1];
+      const { handleBuildViewTab } = await import('@/commands/build');
+      await handleBuildViewTab(token, jobId, view, userId);
+      break;
+    }
+    case 'build_action': {
+      const subAction = rest[0];
+      const jobId = rest[1];
+      if (subAction === 'rename_cat') {
+        const { handleBuildRenameCategoryPrompt } = await import('@/commands/build');
+        await handleBuildRenameCategoryPrompt(token, jobId, userId);
+      } else if (subAction === 'rename_chan') {
+        const { handleBuildRenameChannelPrompt } = await import('@/commands/build');
+        await handleBuildRenameChannelPrompt(token, jobId, userId);
+      }
       break;
     }
     case 'ai_apply': {
