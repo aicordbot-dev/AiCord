@@ -15,13 +15,16 @@
  * 8. Show Undo button
  */
 
-import type {
-  APIChatInputApplicationCommandInteraction,
-  APIApplicationCommandInteractionDataStringOption,
+import {
+  ApplicationCommandOptionType,
+  type APIChatInputApplicationCommandInteraction,
+  type APIApplicationCommandInteractionDataStringOption,
 } from 'discord-api-types/v10';
 import { connectDB } from '@/lib/db';
 import { BuildJob } from '@/models/BuildJob';
 import { AuditLog } from '@/models/AuditLog';
+import type { RegisteredCommand } from '@/lib/discord/command-registry';
+import { PermissionFlags } from '@/lib/discord/permissions';
 import { generateBlueprint, SERVER_TEMPLATES } from '@/lib/ai/generate-blueprint';
 import { buildBlueprintPreviewEmbeds } from '@/lib/discord/blueprint-preview';
 import {
@@ -374,3 +377,51 @@ export async function handleBuildUndo(
     });
   }
 }
+
+export const buildCommand: RegisteredCommand = {
+  name: 'build',
+  description: 'AI-generate a complete server structure from a description',
+  category: 'builder',
+  default_member_permissions: PermissionFlags.MANAGE_GUILD.toString(),
+  dm_permission: false,
+  rateLimit: { limit: 3, windowMs: 60_000 },
+  options: [
+    {
+      name: 'description',
+      description: 'Describe the server you want to build (e.g. "gaming community with web dev section")',
+      type: ApplicationCommandOptionType.String,
+      required: false,
+      max_length: 500,
+    },
+    {
+      name: 'template',
+      description: 'Start from a pre-defined template',
+      type: ApplicationCommandOptionType.String,
+      required: false,
+      choices: [
+        { name: '🎮 Gaming Community', value: 'gaming' },
+        { name: '💻 Developer Community', value: 'dev' },
+        { name: '📚 Study Group', value: 'study' },
+        { name: '🎨 Creator Community', value: 'creator' },
+        { name: '💼 Business Support', value: 'business' },
+      ],
+    },
+  ],
+  execute: handleBuildCommand,
+  autocomplete: async (ctx) => {
+    if (ctx.focusedOption.name === 'template') {
+      const query = ctx.focusedOption.value.toLowerCase();
+      const templates = [
+        { name: '🎮 Gaming Community', value: 'gaming' },
+        { name: '💻 Developer Community', value: 'dev' },
+        { name: '📚 Study Group', value: 'study' },
+        { name: '🎨 Creator Community', value: 'creator' },
+        { name: '💼 Business Support', value: 'business' },
+      ];
+      return templates.filter(
+        (t) => t.name.toLowerCase().includes(query) || t.value.toLowerCase().includes(query),
+      );
+    }
+    return [];
+  },
+};

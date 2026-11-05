@@ -24,6 +24,10 @@ import type {
   APIMessageComponentInteraction,
 } from 'discord-api-types/v10';
 import { env } from '@/lib/env';
+import {
+  handleCommandInteraction,
+  handleAutocompleteInteraction,
+} from '@/lib/discord/command-registry';
 
 // ─── Response constants ───────────────────────────────────────────────────
 
@@ -103,11 +107,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // ─── Slash Commands ────────────────────────────────────────────────────
     if (type === InteractionType.APPLICATION_COMMAND) {
       const cmd = interaction as unknown as APIChatInputApplicationCommandInteraction;
-      const commandName = cmd.data.name;
 
-      // Fire-and-forget the async work after returning deferred immediately
-      handleCommandAsync(cmd, commandName).catch((err) => {
-        console.error(`[Interactions] Error handling command "${commandName}":`, err);
+      // Fire-and-forget the async work via central command registry after returning deferred immediately
+      handleCommandInteraction(cmd).catch((err) => {
+        console.error(`[Interactions] Error handling command "${cmd.data?.name}":`, err);
       });
 
       return NextResponse.json(DEFERRED_CHANNEL_MESSAGE);
@@ -128,7 +131,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     // ─── Autocomplete ──────────────────────────────────────────────────────
     if (type === InteractionType.APPLICATION_COMMAND_AUTOCOMPLETE) {
-      const choices = await handleAutocomplete();
+      const choices = await handleAutocompleteInteraction(interaction);
       return NextResponse.json({
         type: InteractionResponseType.APPLICATION_COMMAND_AUTOCOMPLETE_RESULT,
         data: { choices },
@@ -139,44 +142,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   } catch (err) {
     console.error('[Interactions] Unexpected error handling interaction:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  }
-}
-
-// ─── Async Command Dispatcher ─────────────────────────────────────────────
-
-async function handleCommandAsync(
-  interaction: APIChatInputApplicationCommandInteraction,
-  commandName: string,
-): Promise<void> {
-  switch (commandName) {
-    case 'build': {
-      const { handleBuildCommand } = await import('@/commands/build');
-      await handleBuildCommand(interaction);
-      break;
-    }
-    case 'ai': {
-      const { handleAiCommand } = await import('@/commands/ai');
-      await handleAiCommand(interaction);
-      break;
-    }
-    case 'role': {
-      const { handleRoleCommand } = await import('@/commands/role');
-      await handleRoleCommand(interaction);
-      break;
-    }
-    case 'channel': {
-      const { handleChannelCommand } = await import('@/commands/channel');
-      await handleChannelCommand(interaction);
-      break;
-    }
-    case 'mod': {
-      const { handleModCommand } = await import('@/commands/mod');
-      await handleModCommand(interaction);
-      break;
-    }
-    default: {
-      console.warn(`[Interactions] Unknown command: ${commandName}`);
-    }
   }
 }
 
@@ -245,11 +210,4 @@ async function handleComponentAsync(
       console.warn(`[Interactions] Unknown component action: ${action}`);
     }
   }
-}
-
-// ─── Autocomplete Handler ─────────────────────────────────────────────────
-
-async function handleAutocomplete(): Promise<Array<{ name: string; value: string }>> {
-  // Expanded in later phases with role/channel name autocomplete
-  return [];
 }

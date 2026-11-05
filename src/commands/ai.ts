@@ -14,8 +14,11 @@ import type { APIChatInputApplicationCommandInteraction } from 'discord-api-type
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { generateObject } from 'ai';
 import { z } from 'zod';
+import { ApplicationCommandOptionType } from 'discord-api-types/v10';
 import { connectDB } from '@/lib/db';
 import { AuditLog } from '@/models/AuditLog';
+import type { RegisteredCommand } from '@/lib/discord/command-registry';
+import { PermissionFlags } from '@/lib/discord/permissions';
 import {
   editInteractionResponse,
   buildButton,
@@ -25,9 +28,11 @@ import { errorEmbed, infoEmbed, warningEmbed, clampEmbed, Colors } from '@/lib/d
 import { env } from '@/lib/env';
 import { GEMINI_FALLBACK_MODELS } from '@/lib/ai/generate-blueprint';
 
-const google = createGoogleGenerativeAI({
-  apiKey: env.GEMINI_API_KEY,
-});
+function getGoogle() {
+  return createGoogleGenerativeAI({
+    apiKey: env.GEMINI_API_KEY,
+  });
+}
 
 // ─── Action Schema ─────────────────────────────────────────────────────────
 // NEVER execute raw model output. Only these typed actions are allowed.
@@ -115,6 +120,7 @@ export async function handleAiCommand(
   });
 
   try {
+    const google = getGoogle();
     let object: z.infer<typeof AiActionsResponseSchema> | null = null;
     let lastError: unknown = null;
 
@@ -257,3 +263,22 @@ export async function handleAiApply(
     });
   }
 }
+
+export const aiCommand: RegisteredCommand = {
+  name: 'ai',
+  description: 'Natural language server management',
+  category: 'ai',
+  default_member_permissions: PermissionFlags.MANAGE_GUILD.toString(),
+  dm_permission: false,
+  rateLimit: { limit: 5, windowMs: 30_000 },
+  options: [
+    {
+      name: 'request',
+      description: 'What would you like to do? (e.g. "create a private moderators channel")',
+      type: ApplicationCommandOptionType.String,
+      required: true,
+      max_length: 500,
+    },
+  ],
+  execute: handleAiCommand,
+};

@@ -18,6 +18,7 @@ export interface IGuildConfig extends Document {
   timezone: string;
   aiModEnabled: boolean;
   features: Record<string, boolean>; // Module toggle map
+  disabledCommands?: string[]; // Disabled slash command names
   createdAt: Date;
   updatedAt: Date;
 }
@@ -60,6 +61,10 @@ const GuildConfigSchema = new Schema<IGuildConfig>(
       type: Map,
       of: Boolean,
       default: {},
+    },
+    disabledCommands: {
+      type: [String],
+      default: [],
     },
   },
   {

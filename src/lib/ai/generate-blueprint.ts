@@ -8,9 +8,11 @@ import { generateObject } from 'ai';
 import { ServerBlueprintSchema, type ServerBlueprint, validateBlueprintSafety } from './blueprint.schema';
 import { env } from '@/lib/env';
 
-const google = createGoogleGenerativeAI({
-  apiKey: env.GEMINI_API_KEY,
-});
+function getGoogleProvider() {
+  return createGoogleGenerativeAI({
+    apiKey: env.GEMINI_API_KEY,
+  });
+}
 
 const SYSTEM_PROMPT = `You are AiCord, an expert Discord server architect. Your job is to design well-structured Discord servers based on user descriptions.
 
@@ -66,6 +68,7 @@ export async function generateBlueprint(
 
   let blueprint: ServerBlueprint | null = null;
   let lastError: unknown = null;
+  const google = getGoogleProvider();
 
   for (const modelName of GEMINI_FALLBACK_MODELS) {
     try {

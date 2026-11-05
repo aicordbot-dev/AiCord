@@ -3,10 +3,14 @@
  * Handles /channel subcommands: create, delete, lock, unlock, slowmode.
  */
 
-import type { APIChatInputApplicationCommandInteraction } from 'discord-api-types/v10';
+import {
+  ApplicationCommandOptionType,
+  type APIChatInputApplicationCommandInteraction,
+} from 'discord-api-types/v10';
 import { Routes, ChannelType } from 'discord-api-types/v10';
 import { connectDB } from '@/lib/db';
 import { getDiscordRest, discordApiCall } from '@/lib/discord/rest';
+import type { RegisteredCommand } from '@/lib/discord/command-registry';
 import { editInteractionResponse } from '@/lib/discord/interaction-response';
 import { successEmbed, errorEmbed } from '@/lib/discord/embeds';
 import { sanitizeChannelName } from '@/lib/limits';
@@ -198,3 +202,119 @@ async function handleChannelSlowmode(
     });
   }
 }
+
+export const channelCommand: RegisteredCommand = {
+  name: 'channel',
+  description: 'Manage server channels',
+  category: 'channels',
+  default_member_permissions: PermissionFlags.MANAGE_CHANNELS.toString(),
+  dm_permission: false,
+  rateLimit: { limit: 10, windowMs: 15_000 },
+  options: [
+    {
+      name: 'create',
+      description: 'Create a new channel',
+      type: ApplicationCommandOptionType.Subcommand,
+      options: [
+        {
+          name: 'name',
+          description: 'Channel name',
+          type: ApplicationCommandOptionType.String,
+          required: true,
+          max_length: 100,
+        },
+        {
+          name: 'type',
+          description: 'Channel type',
+          type: ApplicationCommandOptionType.String,
+          required: false,
+          choices: [
+            { name: 'Text', value: 'text' },
+            { name: 'Voice', value: 'voice' },
+            { name: 'Forum', value: 'forum' },
+            { name: 'Announcement', value: 'announcement' },
+          ],
+        },
+        {
+          name: 'category',
+          description: 'Category to place the channel in',
+          type: ApplicationCommandOptionType.Channel,
+          required: false,
+        },
+        {
+          name: 'private',
+          description: 'Make channel private (visible only to specified roles)',
+          type: ApplicationCommandOptionType.Boolean,
+          required: false,
+        },
+      ],
+    },
+    {
+      name: 'delete',
+      description: 'Delete a channel',
+      type: ApplicationCommandOptionType.Subcommand,
+      options: [
+        {
+          name: 'channel',
+          description: 'The channel to delete',
+          type: ApplicationCommandOptionType.Channel,
+          required: true,
+        },
+      ],
+    },
+    {
+      name: 'lock',
+      description: 'Lock a channel (prevent @everyone from sending messages)',
+      type: ApplicationCommandOptionType.Subcommand,
+      options: [
+        {
+          name: 'channel',
+          description: 'The channel to lock (defaults to current)',
+          type: ApplicationCommandOptionType.Channel,
+          required: false,
+        },
+        {
+          name: 'reason',
+          description: 'Reason for locking',
+          type: ApplicationCommandOptionType.String,
+          required: false,
+        },
+      ],
+    },
+    {
+      name: 'unlock',
+      description: 'Unlock a channel',
+      type: ApplicationCommandOptionType.Subcommand,
+      options: [
+        {
+          name: 'channel',
+          description: 'The channel to unlock (defaults to current)',
+          type: ApplicationCommandOptionType.Channel,
+          required: false,
+        },
+      ],
+    },
+    {
+      name: 'slowmode',
+      description: 'Set slowmode for a channel',
+      type: ApplicationCommandOptionType.Subcommand,
+      options: [
+        {
+          name: 'seconds',
+          description: 'Slowmode duration in seconds (0 to disable, max 21600)',
+          type: ApplicationCommandOptionType.Integer,
+          required: true,
+          min_value: 0,
+          max_value: 21600,
+        },
+        {
+          name: 'channel',
+          description: 'The channel to set slowmode on (defaults to current)',
+          type: ApplicationCommandOptionType.Channel,
+          required: false,
+        },
+      ],
+    },
+  ],
+  execute: handleChannelCommand,
+};

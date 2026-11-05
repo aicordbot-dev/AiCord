@@ -3,10 +3,15 @@
  * Handles /role subcommands: create, delete, assign, remove, panel.
  */
 
-import type { APIChatInputApplicationCommandInteraction } from 'discord-api-types/v10';
+import {
+  ApplicationCommandOptionType,
+  type APIChatInputApplicationCommandInteraction,
+} from 'discord-api-types/v10';
 import { Routes } from 'discord-api-types/v10';
 import { connectDB } from '@/lib/db';
 import { RolePanel } from '@/models/RolePanel';
+import type { RegisteredCommand } from '@/lib/discord/command-registry';
+import { PermissionFlags } from '@/lib/discord/permissions';
 import { getDiscordRest, discordApiCall } from '@/lib/discord/rest';
 import {
   editInteractionResponse,
@@ -243,3 +248,122 @@ export async function handleRoleDeleteConfirm(
     });
   }
 }
+
+export const roleCommand: RegisteredCommand = {
+  name: 'role',
+  description: 'Manage server roles',
+  category: 'roles',
+  default_member_permissions: PermissionFlags.MANAGE_ROLES.toString(),
+  dm_permission: false,
+  rateLimit: { limit: 10, windowMs: 15_000 },
+  options: [
+    {
+      name: 'create',
+      description: 'Create a new role',
+      type: ApplicationCommandOptionType.Subcommand,
+      options: [
+        {
+          name: 'name',
+          description: 'Role name',
+          type: ApplicationCommandOptionType.String,
+          required: true,
+          max_length: 100,
+        },
+        {
+          name: 'color',
+          description: 'Role color (hex, e.g. #ff0000)',
+          type: ApplicationCommandOptionType.String,
+          required: false,
+        },
+        {
+          name: 'hoist',
+          description: 'Show role separately in member list',
+          type: ApplicationCommandOptionType.Boolean,
+          required: false,
+        },
+        {
+          name: 'mentionable',
+          description: 'Allow everyone to mention this role',
+          type: ApplicationCommandOptionType.Boolean,
+          required: false,
+        },
+      ],
+    },
+    {
+      name: 'delete',
+      description: 'Delete a role',
+      type: ApplicationCommandOptionType.Subcommand,
+      options: [
+        {
+          name: 'role',
+          description: 'The role to delete',
+          type: ApplicationCommandOptionType.Role,
+          required: true,
+        },
+      ],
+    },
+    {
+      name: 'assign',
+      description: 'Assign a role to a member',
+      type: ApplicationCommandOptionType.Subcommand,
+      options: [
+        {
+          name: 'user',
+          description: 'The member to give the role to',
+          type: ApplicationCommandOptionType.User,
+          required: true,
+        },
+        {
+          name: 'role',
+          description: 'The role to assign',
+          type: ApplicationCommandOptionType.Role,
+          required: true,
+        },
+      ],
+    },
+    {
+      name: 'remove',
+      description: 'Remove a role from a member',
+      type: ApplicationCommandOptionType.Subcommand,
+      options: [
+        {
+          name: 'user',
+          description: 'The member to remove the role from',
+          type: ApplicationCommandOptionType.User,
+          required: true,
+        },
+        {
+          name: 'role',
+          description: 'The role to remove',
+          type: ApplicationCommandOptionType.Role,
+          required: true,
+        },
+      ],
+    },
+    {
+      name: 'panel',
+      description: 'Create a self-assign role panel',
+      type: ApplicationCommandOptionType.Subcommand,
+      options: [
+        {
+          name: 'title',
+          description: 'Panel title',
+          type: ApplicationCommandOptionType.String,
+          required: true,
+          max_length: 256,
+        },
+        {
+          name: 'style',
+          description: 'Panel style',
+          type: ApplicationCommandOptionType.String,
+          required: false,
+          choices: [
+            { name: 'Buttons', value: 'buttons' },
+            { name: 'Dropdown', value: 'select' },
+          ],
+        },
+      ],
+    },
+  ],
+  execute: handleRoleCommand,
+};

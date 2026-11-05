@@ -2,8 +2,8 @@
 
 > **Last Updated:** November 5, 2026  
 > **Repository:** [`https://github.com/aicordbot-dev/AiCord.git`](https://github.com/aicordbot-dev/AiCord.git)  
-> **Status:** Production-Ready Core Architecture • Phase 1 (P1) & Phase 22 (P22) Complete • 73/73 Engine Tests Passing  
-> **Active Target:** Phase 14 (P14) — Central Command Registry & Dynamic Autocomplete
+> **Status:** Production-Ready Core Architecture • Phase 1 (P1), Phase 22 (P22) & Phase 14 (P14) Complete • 101/101 Tests Passing  
+> **Active Target:** Phase 2 (P2) — Role/Channel/Category Management Commands
 
 ---
 
@@ -113,12 +113,34 @@ Total: 73 passed, 0 failed, 25 test suites
 
 ---
 
-### 🎯 Immediate Next Step: Phase 14 (P14) — Central Command Registry & Autocomplete
-The next phase to implement is **P14 (Central Command Registry & Autocomplete)**:
-* Standardize all slash command definitions into a unified registry interface.
-* Implement centralized autocomplete router for channel, role, template, and tag arguments.
-* Guild-level permissions override mapping based on `GuildConfig`.
-* Smooth registration pipeline via Discord REST API v10 with ratelimit backoff.
+### ✅ Phase 14 (P14): Central Command Registry & Dynamic Autocomplete Engine (Complete & Tested)
+* **Central Command Registry (`src/lib/discord/command-registry.ts`)**:
+  * Strict `RegisteredCommand` and `AutocompleteContext` TypeScript interfaces.
+  * In-memory registry with duplicate overwrite protection, unregister, and lookup.
+  * Formats commands for Discord REST API JSON schemas (`toDiscordCommandJson`, `getAllDiscordCommandJson`).
+  * Backwards-compatible `COMMANDS` export in `src/lib/discord/command-definitions.ts` for `scripts/register-commands.ts`.
+* **Engine Integration & Middleware**:
+  * Integrated Phase 22 `RateLimiter` sliding window checking per-command quotas before execution.
+  * Guild disabled commands check via `GuildConfig.disabledCommands` with 60-second cache TTL.
+  * Safe error isolation ensuring polite embed responses with zero stack trace or internal credential leakage.
+* **Dynamic Autocomplete Engine**:
+  * Deep option tree traversal (`findFocusedOption`) resolving focused options in root options, subcommands, and subcommand-groups.
+  * Hard limits enforced: max 25 choices (`slice(0, 25)`), 100-char name, and 100-char string value truncation.
+  * Error-resilient handler isolation returning empty array on unexpected exceptions.
+* **Migrated Commands**:
+  * `/build`, `/ai`, `/role`, `/channel`, and `/mod` fully registered with options and rate limits.
+  * `/build` dynamic template autocompletion.
+* **Test Coverage**:
+  * 28 comprehensive unit tests in `test/discord/command-registry.test.ts`.
+  * Total project tests: **101/101 passing** (73 engine tests + 28 registry tests).
+
+---
+
+### 🎯 Immediate Next Step: Phase 2 (P2) — Role, Channel & Category Management Commands
+The next phase to implement is **P2 (Role/Channel/Category Commands)**:
+* Advanced channel options (`/channel create`, `/channel edit`, sync checks).
+* Complex role management (`/role modify`, `/role hoist`, color hex validator).
+* Deep category synchronization and permission matrix audits.
 
 ---
 
@@ -223,9 +245,9 @@ AiCord development progresses according to the structured Milestone A sequence:
         │
 [P22: 8 Shared Engines]   ✅ DONE (73 Tests Passing)
         │
-[P14: Command Registry]   🚀 ACTIVE NEXT TARGET
+[P14: Command Registry]   ✅ DONE (101 Tests Passing)
         │
-[P2: Role/Channel/Cat]    ⏳ PENDING
+[P2: Role/Channel/Cat]    🚀 ACTIVE NEXT TARGET
         │
 [P3: Moderation Engine]   ⏳ PENDING
         │

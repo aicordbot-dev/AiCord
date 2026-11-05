@@ -3,7 +3,10 @@
  * Handles /mod subcommands: ban, kick, timeout, warn, warnings, purge, case, modlog.
  */
 
-import type { APIChatInputApplicationCommandInteraction } from 'discord-api-types/v10';
+import {
+  ApplicationCommandOptionType,
+  type APIChatInputApplicationCommandInteraction,
+} from 'discord-api-types/v10';
 import { Routes } from 'discord-api-types/v10';
 import { connectDB } from '@/lib/db';
 import { GuildConfig } from '@/models/GuildConfig';
@@ -11,6 +14,8 @@ import { Warning } from '@/models/Warning';
 import { ModCase } from '@/models/ModCase';
 import { TempAction } from '@/models/TempAction';
 import { getDiscordRest, discordApiCall } from '@/lib/discord/rest';
+import type { RegisteredCommand } from '@/lib/discord/command-registry';
+import { PermissionFlags } from '@/lib/discord/permissions';
 import { editInteractionResponse } from '@/lib/discord/interaction-response';
 import { successEmbed, errorEmbed, infoEmbed, clampEmbed, Colors } from '@/lib/discord/embeds';
 import {
@@ -488,3 +493,176 @@ async function handleModlogSetup(
     embeds: [successEmbed('Mod Log Set', `Moderation actions will now be logged in <#${channelId}>.`)],
   });
 }
+
+export const modCommand: RegisteredCommand = {
+  name: 'mod',
+  description: 'Moderation commands',
+  category: 'moderation',
+  default_member_permissions: PermissionFlags.KICK_MEMBERS.toString(),
+  dm_permission: false,
+  rateLimit: { limit: 15, windowMs: 10_000 },
+  options: [
+    {
+      name: 'ban',
+      description: 'Ban a member',
+      type: ApplicationCommandOptionType.Subcommand,
+      options: [
+        {
+          name: 'user',
+          description: 'The member to ban',
+          type: ApplicationCommandOptionType.User,
+          required: true,
+        },
+        {
+          name: 'reason',
+          description: 'Reason for the ban',
+          type: ApplicationCommandOptionType.String,
+          required: false,
+          max_length: 500,
+        },
+        {
+          name: 'delete_days',
+          description: 'Days of messages to delete (0-7)',
+          type: ApplicationCommandOptionType.Integer,
+          required: false,
+          min_value: 0,
+          max_value: 7,
+        },
+        {
+          name: 'duration',
+          description: 'Temporary ban duration (e.g. 7d, 24h, 30m) — leave blank for permanent',
+          type: ApplicationCommandOptionType.String,
+          required: false,
+        },
+      ],
+    },
+    {
+      name: 'kick',
+      description: 'Kick a member',
+      type: ApplicationCommandOptionType.Subcommand,
+      options: [
+        {
+          name: 'user',
+          description: 'The member to kick',
+          type: ApplicationCommandOptionType.User,
+          required: true,
+        },
+        {
+          name: 'reason',
+          description: 'Reason for the kick',
+          type: ApplicationCommandOptionType.String,
+          required: false,
+          max_length: 500,
+        },
+      ],
+    },
+    {
+      name: 'timeout',
+      description: 'Timeout a member',
+      type: ApplicationCommandOptionType.Subcommand,
+      options: [
+        {
+          name: 'user',
+          description: 'The member to timeout',
+          type: ApplicationCommandOptionType.User,
+          required: true,
+        },
+        {
+          name: 'duration',
+          description: 'Timeout duration (e.g. 10m, 1h, 7d)',
+          type: ApplicationCommandOptionType.String,
+          required: true,
+        },
+        {
+          name: 'reason',
+          description: 'Reason for the timeout',
+          type: ApplicationCommandOptionType.String,
+          required: false,
+          max_length: 500,
+        },
+      ],
+    },
+    {
+      name: 'warn',
+      description: 'Warn a member',
+      type: ApplicationCommandOptionType.Subcommand,
+      options: [
+        {
+          name: 'user',
+          description: 'The member to warn',
+          type: ApplicationCommandOptionType.User,
+          required: true,
+        },
+        {
+          name: 'reason',
+          description: 'Reason for the warning',
+          type: ApplicationCommandOptionType.String,
+          required: true,
+          max_length: 500,
+        },
+      ],
+    },
+    {
+      name: 'warnings',
+      description: 'View warnings for a member',
+      type: ApplicationCommandOptionType.Subcommand,
+      options: [
+        {
+          name: 'user',
+          description: 'The member to view warnings for',
+          type: ApplicationCommandOptionType.User,
+          required: true,
+        },
+      ],
+    },
+    {
+      name: 'purge',
+      description: 'Bulk delete messages',
+      type: ApplicationCommandOptionType.Subcommand,
+      options: [
+        {
+          name: 'amount',
+          description: 'Number of messages to delete (2-100)',
+          type: ApplicationCommandOptionType.Integer,
+          required: true,
+          min_value: 2,
+          max_value: 100,
+        },
+        {
+          name: 'user',
+          description: 'Only delete messages from this user',
+          type: ApplicationCommandOptionType.User,
+          required: false,
+        },
+      ],
+    },
+    {
+      name: 'case',
+      description: 'View a moderation case',
+      type: ApplicationCommandOptionType.Subcommand,
+      options: [
+        {
+          name: 'number',
+          description: 'Case number',
+          type: ApplicationCommandOptionType.Integer,
+          required: true,
+          min_value: 1,
+        },
+      ],
+    },
+    {
+      name: 'modlog',
+      description: 'Set up the moderation log channel',
+      type: ApplicationCommandOptionType.Subcommand,
+      options: [
+        {
+          name: 'channel',
+          description: 'Channel to send moderation logs to',
+          type: ApplicationCommandOptionType.Channel,
+          required: true,
+        },
+      ],
+    },
+  ],
+  execute: handleModCommand,
+};
