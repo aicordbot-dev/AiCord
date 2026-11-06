@@ -40,6 +40,19 @@ import {
   coinflipCommand,
   slotsCommand,
 } from '@/commands/games';
+import {
+  balanceCommand,
+  dailyCommand,
+  depositCommand,
+  withdrawCommand,
+  payCommand,
+  workCommand,
+  crimeCommand,
+  shopCommand,
+  buyCommand,
+  shopAdminCommand,
+  richCommand,
+} from '@/commands/economy';
 
 // ─── Interfaces ───────────────────────────────────────────────────────────
 
@@ -152,6 +165,20 @@ const LEVEL_COMMAND_NAMES = new Set([
   'level-config',
 ]);
 
+const ECONOMY_COMMAND_NAMES = new Set([
+  'balance',
+  'daily',
+  'deposit',
+  'withdraw',
+  'pay',
+  'work',
+  'crime',
+  'shop',
+  'buy',
+  'shop-admin',
+  'rich',
+]);
+
 const GAME_COMMAND_NAMES = new Set([
   'trivia',
   'blackjack',
@@ -171,6 +198,10 @@ export function getCommand(name: string): RegisteredCommand | undefined {
   }
   if (!cmd && GAME_COMMAND_NAMES.has(name)) {
     registerGameCommands();
+    cmd = registry.get(name);
+  }
+  if (!cmd && ECONOMY_COMMAND_NAMES.has(name)) {
+    registerEconomyCommands();
     cmd = registry.get(name);
   }
   return cmd;
@@ -220,6 +251,23 @@ export function registerGameCommands(): void {
   registerCommand(rpsCommand);
   registerCommand(coinflipCommand);
   registerCommand(slotsCommand);
+}
+
+/**
+ * Register all Phase 28 Server Economy commands into the registry.
+ */
+export function registerEconomyCommands(): void {
+  registerCommand(balanceCommand);
+  registerCommand(dailyCommand);
+  registerCommand(depositCommand);
+  registerCommand(withdrawCommand);
+  registerCommand(payCommand);
+  registerCommand(workCommand);
+  registerCommand(crimeCommand);
+  registerCommand(shopCommand);
+  registerCommand(buyCommand);
+  registerCommand(shopAdminCommand);
+  registerCommand(richCommand);
 }
 
 /**

@@ -392,6 +392,20 @@ async function handleComponentAsync(
       await handleLeaderboardInteraction(token, guildId, targetPage, component);
       break;
     }
+    case 'econ_shop': {
+      const pageStr = rest[0];
+      const targetPage = parseInt(pageStr, 10) || 1;
+      const { handleShopInteraction } = await import('@/commands/economy');
+      await handleShopInteraction(token, guildId, targetPage, component);
+      break;
+    }
+    case 'econ_rich': {
+      const pageStr = rest[0];
+      const targetPage = parseInt(pageStr, 10) || 1;
+      const { handleRichInteraction } = await import('@/commands/economy');
+      await handleRichInteraction(token, guildId, targetPage, component);
+      break;
+    }
     default: {
       console.warn(`[Interactions] Unknown component action: ${action}`);
     }

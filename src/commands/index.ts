@@ -10,3 +10,4 @@ export * from './channel';
 export * from './mod';
 export * from './games';
 export * from './levels';
+export * from './economy';
