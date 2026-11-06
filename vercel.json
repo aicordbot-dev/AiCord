@@ -1,12 +1,8 @@
 {
   "crons": [
     {
-      "path": "/api/cron/process-build-jobs",
-      "schedule": "*/2 * * * *"
-    },
-    {
-      "path": "/api/cron/process-temp-actions",
-      "schedule": "*/5 * * * *"
+      "path": "/api/cron/jobs",
+      "schedule": "0 0 * * *"
     }
   ]
 }
