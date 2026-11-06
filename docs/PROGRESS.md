@@ -12,7 +12,7 @@
 | P5 | Dashboard | todo | |
 | P6 | Worker | todo | |
 | P7 | Plans + billing | todo | |
-| P23 | Levels | todo | |
+| P23 | Levels | done | Comprehensive Levels & XP Progression System & Automated Role Rewards: MongoDB models (UserLevel, LevelConfig), quadratic XP progression formula (XP = 5*N^2 + 50*N + 100), visual rank cards with custom progress bar rendering, server XP leaderboard with medal badges (🥇, 🥈, 🥉), TemplateEngine-integrated level-up announcements, 60s anti-spam sliding-window cooldown, ignored channels/roles, XP multipliers, automated role rewards on level thresholds, slash commands (/rank, /leaderboard, /level-rewards, /level-config) registered under category 'levels', and component webhook pagination routing. 254 unit tests passing (47 new tests). 0 typecheck errors, 0 lint warnings. |
 | P24 | Birthdays + welcome | todo | |
 | P15 | Tickets | todo | |
 | P16 | Automod | todo | |

@@ -385,6 +385,13 @@ async function handleComponentAsync(
       await handleRpsInteraction(token, gameId, choice, userId);
       break;
     }
+    case 'leaderboard': {
+      const pageStr = rest[0];
+      const targetPage = parseInt(pageStr, 10) || 1;
+      const { handleLeaderboardInteraction } = await import('@/commands/levels');
+      await handleLeaderboardInteraction(token, guildId, targetPage, component);
+      break;
+    }
     default: {
       console.warn(`[Interactions] Unknown component action: ${action}`);
     }

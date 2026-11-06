@@ -28,6 +28,12 @@ import { roleCommand } from '@/commands/role';
 import { channelCommand } from '@/commands/channel';
 import { modCommand } from '@/commands/mod';
 import {
+  rankCommand,
+  leaderboardCommand,
+  levelRewardsCommand,
+  levelConfigCommand,
+} from '@/commands/levels';
+import {
   triviaCommand,
   blackjackCommand,
   rpsCommand,
@@ -139,6 +145,13 @@ export function unregisterCommand(name: string): boolean {
   return registry.delete(name);
 }
 
+const LEVEL_COMMAND_NAMES = new Set([
+  'rank',
+  'leaderboard',
+  'level-rewards',
+  'level-config',
+]);
+
 const GAME_COMMAND_NAMES = new Set([
   'trivia',
   'blackjack',
@@ -152,6 +165,10 @@ const GAME_COMMAND_NAMES = new Set([
  */
 export function getCommand(name: string): RegisteredCommand | undefined {
   let cmd = registry.get(name);
+  if (!cmd && LEVEL_COMMAND_NAMES.has(name)) {
+    registerLevelCommands();
+    cmd = registry.get(name);
+  }
   if (!cmd && GAME_COMMAND_NAMES.has(name)) {
     registerGameCommands();
     cmd = registry.get(name);
@@ -182,6 +199,16 @@ export function registerBuiltinCommands(): void {
   registerCommand(roleCommand);
   registerCommand(channelCommand);
   registerCommand(modCommand);
+}
+
+/**
+ * Register all Phase 23 Levels & XP Progression commands into the registry.
+ */
+export function registerLevelCommands(): void {
+  registerCommand(rankCommand);
+  registerCommand(leaderboardCommand);
+  registerCommand(levelRewardsCommand);
+  registerCommand(levelConfigCommand);
 }
 
 /**
