@@ -17,6 +17,27 @@ export interface InteractionResponseOptions {
   flags?: number;
 }
 
+// Response hook for unit testing and intercepting responses
+type ResponseHandler = (
+  token: string,
+  options: InteractionResponseOptions,
+) => Promise<void>;
+type FollowUpHandler = (
+  token: string,
+  options: InteractionResponseOptions,
+) => Promise<{ id: string }>;
+
+let customResponseHandler: ResponseHandler | null = null;
+let customFollowUpHandler: FollowUpHandler | null = null;
+
+export function setResponseHandler(handler: ResponseHandler | null): void {
+  customResponseHandler = handler;
+}
+
+export function setFollowUpHandler(handler: FollowUpHandler | null): void {
+  customFollowUpHandler = handler;
+}
+
 /**
  * Edit the original deferred response (the "thinking..." message).
  * Called after performing async work.
@@ -25,6 +46,11 @@ export async function editInteractionResponse(
   interactionToken: string,
   options: InteractionResponseOptions,
 ): Promise<void> {
+  if (customResponseHandler) {
+    await customResponseHandler(interactionToken, options);
+    return;
+  }
+
   const rest = getDiscordRest();
   const { content, embeds, components, ephemeral, flags } = options;
 
@@ -50,6 +76,10 @@ export async function sendFollowUp(
   interactionToken: string,
   options: InteractionResponseOptions,
 ): Promise<{ id: string }> {
+  if (customFollowUpHandler) {
+    return await customFollowUpHandler(interactionToken, options);
+  }
+
   const rest = getDiscordRest();
   const { content, embeds, components, ephemeral, flags } = options;
 

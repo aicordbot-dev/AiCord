@@ -33,7 +33,7 @@
 | P26 | Events + reputation | todo | |
 | P28 | Economy + voice tools | todo | |
 | P32 | Dev-community tools | todo | |
-| P33 | Gaming extras | todo | |
+| P33 | Gaming extras | done | Interactive Games Suite: modular engines for Trivia (55 questions across tech, gaming, anime, science, general with shuffled choices and 4-button ActionRow), Blackjack (standard 52-card deck, dynamic Aces, dealer hits on soft 17 and stands on hard 17+, visual Unicode cards, Hit/Stand/Double Down buttons), Rock Paper Scissors (3x3 evaluation matrix, instant and interactive button play), 3-Reel Slots (weighted spin simulation, 25x/15x/10x/5x/2x paytable, ASCII retro cabinet), Coinflip (streak counter with flame tiers, optional wager doubling). Registered /trivia, /blackjack, /rps, /coinflip, /slots under category 'fun' with autocomplete and rate limiting. Webhook component routing with ephemeral security rejections for unauthorized users. 207 unit tests passing (81 new games tests). 0 typecheck errors, 0 lint warnings. |
 | P34 | Translation + i18n | todo | |
 | P29 | Public API + webhooks | todo | |
 | P37 | Trust network | todo | |

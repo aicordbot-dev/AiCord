@@ -27,6 +27,13 @@ import { aiCommand } from '@/commands/ai';
 import { roleCommand } from '@/commands/role';
 import { channelCommand } from '@/commands/channel';
 import { modCommand } from '@/commands/mod';
+import {
+  triviaCommand,
+  blackjackCommand,
+  rpsCommand,
+  coinflipCommand,
+  slotsCommand,
+} from '@/commands/games';
 
 // ─── Interfaces ───────────────────────────────────────────────────────────
 
@@ -132,11 +139,24 @@ export function unregisterCommand(name: string): boolean {
   return registry.delete(name);
 }
 
+const GAME_COMMAND_NAMES = new Set([
+  'trivia',
+  'blackjack',
+  'rps',
+  'coinflip',
+  'slots',
+]);
+
 /**
  * Retrieve a registered command by its primary name.
  */
 export function getCommand(name: string): RegisteredCommand | undefined {
-  return registry.get(name);
+  let cmd = registry.get(name);
+  if (!cmd && GAME_COMMAND_NAMES.has(name)) {
+    registerGameCommands();
+    cmd = registry.get(name);
+  }
+  return cmd;
 }
 
 /**
@@ -162,6 +182,17 @@ export function registerBuiltinCommands(): void {
   registerCommand(roleCommand);
   registerCommand(channelCommand);
   registerCommand(modCommand);
+}
+
+/**
+ * Register all Phase 33 Interactive Game commands into the registry.
+ */
+export function registerGameCommands(): void {
+  registerCommand(triviaCommand);
+  registerCommand(blackjackCommand);
+  registerCommand(rpsCommand);
+  registerCommand(coinflipCommand);
+  registerCommand(slotsCommand);
 }
 
 /**

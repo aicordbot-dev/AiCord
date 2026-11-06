@@ -8,3 +8,4 @@ export * from './ai';
 export * from './role';
 export * from './channel';
 export * from './mod';
+export * from './games';

@@ -364,6 +364,27 @@ async function handleComponentAsync(
       });
       break;
     }
+    case 'game_trivia': {
+      const gameId = rest[0];
+      const choiceIndex = rest[1];
+      const { handleTriviaInteraction } = await import('@/commands/games');
+      await handleTriviaInteraction(token, gameId, choiceIndex, userId);
+      break;
+    }
+    case 'game_bj': {
+      const subAction = rest[0] as 'hit' | 'stand' | 'double';
+      const gameId = rest[1];
+      const { handleBlackjackInteraction } = await import('@/commands/games');
+      await handleBlackjackInteraction(token, subAction, gameId, userId);
+      break;
+    }
+    case 'game_rps': {
+      const gameId = rest[0];
+      const choice = rest[1];
+      const { handleRpsInteraction } = await import('@/commands/games');
+      await handleRpsInteraction(token, gameId, choice, userId);
+      break;
+    }
     default: {
       console.warn(`[Interactions] Unknown component action: ${action}`);
     }
