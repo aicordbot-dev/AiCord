@@ -17,6 +17,7 @@ export { LevelConfig } from './LevelConfig';
 export { EconomyUser } from './EconomyUser';
 export { EconomyShopItem } from './EconomyShopItem';
 export { UserProfileStyle } from './UserProfileStyle';
+export { GuildSubscription } from './GuildSubscription';
 
 export type { IGuildConfig } from './GuildConfig';
 export type { IBuildJob, BuildJobStatus, CreatedIds, BuildStep } from './BuildJob';
@@ -32,3 +33,9 @@ export type { ILevelConfig, ILevelReward } from './LevelConfig';
 export type { IEconomyUser, IEconomyInventoryItem } from './EconomyUser';
 export type { IEconomyShopItem, ShopItemType } from './EconomyShopItem';
 export type { IUserProfileStyle } from './UserProfileStyle';
+export type {
+  IGuildSubscription,
+  SubscriptionTier,
+  GuildFeatures,
+  CustomBranding,
+} from './GuildSubscription';

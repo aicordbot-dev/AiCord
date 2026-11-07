@@ -54,6 +54,7 @@ import {
   richCommand,
 } from '@/commands/economy';
 import { customizeCommand } from '@/commands/customize';
+import { premiumCommand } from '@/commands/premium';
 
 // ─── Interfaces ───────────────────────────────────────────────────────────
 
@@ -192,6 +193,8 @@ const GAME_COMMAND_NAMES = new Set([
 
 const CUSTOMIZE_COMMAND_NAMES = new Set(['customize']);
 
+const PREMIUM_COMMAND_NAMES = new Set(['premium']);
+
 /**
  * Retrieve a registered command by its primary name.
  */
@@ -211,6 +214,10 @@ export function getCommand(name: string): RegisteredCommand | undefined {
   }
   if (!cmd && CUSTOMIZE_COMMAND_NAMES.has(name)) {
     registerCustomizeCommands();
+    cmd = registry.get(name);
+  }
+  if (!cmd && PREMIUM_COMMAND_NAMES.has(name)) {
+    registerPremiumCommands();
     cmd = registry.get(name);
   }
   return cmd;
@@ -287,6 +294,13 @@ export function registerCustomizeCommands(): void {
 }
 
 /**
+ * Register all Premium & Entitlement Engine commands into the registry.
+ */
+export function registerPremiumCommands(): void {
+  registerCommand(premiumCommand);
+}
+
+/**
  * Register all commands across all suites.
  */
 export function registerAllCommands(): void {
@@ -297,6 +311,7 @@ export function registerAllCommands(): void {
   registerGameCommands();
   registerEconomyCommands();
   registerCustomizeCommands();
+  registerPremiumCommands();
 }
 
 /**
