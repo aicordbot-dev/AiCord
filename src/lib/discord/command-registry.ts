@@ -256,6 +256,15 @@ export function registerGameCommands(): void {
 /**
  * Register all Phase 28 Server Economy commands into the registry.
  */
+export function registerAllCommands(): void {
+  if (!getCommand('build')) {
+    registerBuiltinCommands();
+  }
+  registerLevelCommands();
+  registerGameCommands();
+  registerEconomyCommands();
+}
+
 export function registerEconomyCommands(): void {
   registerCommand(balanceCommand);
   registerCommand(dailyCommand);

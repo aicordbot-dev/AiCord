@@ -6,6 +6,9 @@
 
 import {
   getAllDiscordCommandJson,
+  getAllCommands,
+  toDiscordCommandJson,
+  registerAllCommands,
 } from './command-registry';
 import type { ApplicationCommandType } from 'discord-api-types/v10';
 
@@ -14,19 +17,26 @@ export interface CommandDefinition {
   description: string;
   type?: ApplicationCommandType;
   options?: unknown[];
-  default_member_permissions?: string; // Required Discord permissions for the invoker
+  default_member_permissions?: string;
   dm_permission?: boolean;
+}
+
+/**
+ * Baseline built-in commands for backwards compatibility with tests.
+ */
+export const COMMANDS: CommandDefinition[] = getAllDiscordCommandJson() as CommandDefinition[];
+
+/**
+ * Retrieve all registered application commands across all active suites (Builtin, Games, Levels, Economy).
+ */
+export function getAllApplicationCommands(): CommandDefinition[] {
+  registerAllCommands();
+  return getAllCommands().map(toDiscordCommandJson) as CommandDefinition[];
 }
 
 /**
  * Retrieve dynamically formatted command definitions for Discord registration.
  */
 export function getCommandDefinitions(): CommandDefinition[] {
-  return getAllDiscordCommandJson() as CommandDefinition[];
+  return getAllApplicationCommands();
 }
-
-/**
- * Array of all registered commands in Discord API JSON format.
- * Preserves 100% backwards compatibility with scripts/register-commands.ts.
- */
-export const COMMANDS: CommandDefinition[] = getAllDiscordCommandJson() as CommandDefinition[];

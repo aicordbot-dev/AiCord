@@ -14,7 +14,7 @@ import { REST, DiscordAPIError } from '@discordjs/rest';
 import { Routes } from 'discord-api-types/v10';
 import * as dotenv from 'dotenv';
 import { resolve } from 'path';
-import { COMMANDS } from '../src/lib/discord/command-definitions';
+import { getAllApplicationCommands } from '../src/lib/discord/command-definitions';
 
 // Load .env.local
 dotenv.config({ path: resolve(process.cwd(), '.env.local') });
@@ -35,7 +35,7 @@ if (!APP_ID || !BOT_TOKEN) {
 const rest = new REST({ version: '10' }).setToken(BOT_TOKEN);
 
 async function registerCommands(): Promise<void> {
-  const commands = COMMANDS;
+  const commands = getAllApplicationCommands();
   console.log(`📋 Registering ${commands.length} commands...`);
 
   if (GUILD_ID) {
