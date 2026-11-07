@@ -41,6 +41,10 @@ export function clearTestStore(): void {
   testServerThemes.clear();
 }
 
+function isTestMode(): boolean {
+  return testModeActive || process.env.NODE_ENV === 'test';
+}
+
 function profileKey(guildId: string, userId: string): string {
   return `${guildId}:${userId}`;
 }
@@ -55,7 +59,7 @@ export async function getUserProfileStyle(
   guildId: string,
   userId: string,
 ): Promise<UserProfileStyleData> {
-  if (testModeActive) {
+  if (isTestMode()) {
     const existing = testProfileStyles.get(profileKey(guildId, userId));
     if (existing) return { ...existing };
 
@@ -106,7 +110,7 @@ export async function updateUserProfileStyle(
   userId: string,
   updates: Partial<Pick<UserProfileStyleData, 'rankTheme' | 'balanceTheme' | 'barStyle' | 'badges'>>,
 ): Promise<UserProfileStyleData> {
-  if (testModeActive) {
+  if (isTestMode()) {
     const current = await getUserProfileStyle(guildId, userId);
     const updated: UserProfileStyleData = {
       ...current,
@@ -140,7 +144,7 @@ export async function updateUserProfileStyle(
  * Get the server default visual theme.
  */
 export async function getServerTheme(guildId: string): Promise<string> {
-  if (testModeActive) {
+  if (isTestMode()) {
     return testServerThemes.get(guildId) ?? 'cyberpunk';
   }
 
@@ -153,7 +157,7 @@ export async function getServerTheme(guildId: string): Promise<string> {
  * Set the server default visual theme.
  */
 export async function setServerTheme(guildId: string, theme: string): Promise<string> {
-  if (testModeActive) {
+  if (isTestMode()) {
     testServerThemes.set(guildId, theme);
     return theme;
   }

@@ -35,6 +35,7 @@ import {
   buildRankCardEmbed,
   buildLeaderboardEmbed,
 } from '@/lib/levels/level-embeds';
+import { getUserProfileStyle, getServerTheme } from '@/lib/styles/user-profile-style';
 import type { DiscordActionRowComponent } from '@/lib/engines/pagination';
 
 // Helper to extract option value
@@ -114,8 +115,9 @@ export async function handleLeaderboardInteraction(
     guildName = existingTitle.replace('🏆 ', '').replace(' — XP Leaderboard', '').trim();
   }
 
+  const serverTheme = await getServerTheme(guildId);
   const { entries, page, totalPages } = await getLeaderboard(guildId, targetPage, 10);
-  const embed = buildLeaderboardEmbed({ id: guildId, name: guildName }, entries, page, totalPages);
+  const embed = buildLeaderboardEmbed({ id: guildId, name: guildName }, entries, page, totalPages, serverTheme);
   const components = totalPages > 1 ? [buildLeaderboardPaginationRow(page, totalPages)] : [];
 
   await editInteractionResponse(token, {
@@ -154,6 +156,7 @@ export async function handleRankCommand(
     : undefined;
 
   const rankResult = await getUserRank(guildId, targetUserId);
+  const userStyle = await getUserProfileStyle(guildId, targetUserId);
 
   const embed = buildRankCardEmbed(
     {
@@ -173,6 +176,7 @@ export async function handleRankCommand(
       voiceSeconds: rankResult.userLevel?.voiceSeconds ?? 0,
     },
     { id: guildId, name: 'Server' },
+    userStyle,
   );
 
   await editInteractionResponse(token, {
@@ -208,8 +212,9 @@ export async function handleLeaderboardCommand(
   const requestedPage = getOption<number>(options, 'page') ?? 1;
   const page = Math.max(1, requestedPage);
 
+  const serverTheme = await getServerTheme(guildId);
   const { entries, totalPages } = await getLeaderboard(guildId, page, 10);
-  const embed = buildLeaderboardEmbed({ id: guildId, name: 'Server' }, entries, page, totalPages);
+  const embed = buildLeaderboardEmbed({ id: guildId, name: 'Server' }, entries, page, totalPages, serverTheme);
   const components = totalPages > 1 ? [buildLeaderboardPaginationRow(page, totalPages)] : [];
 
   await editInteractionResponse(token, {

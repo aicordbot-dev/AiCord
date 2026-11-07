@@ -50,6 +50,7 @@ import {
   buildShopPaginationRow,
   buildRichPaginationRow,
 } from '@/lib/economy/economy-embeds';
+import { getUserProfileStyle, getServerTheme } from '@/lib/styles/user-profile-style';
 
 export { buildShopPaginationRow, buildRichPaginationRow } from '@/lib/economy/economy-embeds';
 
@@ -102,7 +103,8 @@ export async function handleShopInteraction(
   const page = Math.max(1, Math.min(targetPage, totalPages));
   const paginatedItems = allItems.slice((page - 1) * pageSize, page * pageSize);
 
-  const embed = buildShopEmbed(guildName, paginatedItems, page, totalPages);
+  const serverTheme = await getServerTheme(guildId);
+  const embed = buildShopEmbed(guildName, paginatedItems, page, totalPages, serverTheme);
   const components = totalPages > 1 ? [buildShopPaginationRow(page, totalPages)] : [];
 
   await editInteractionResponse(token, {
@@ -124,7 +126,8 @@ export async function handleRichInteraction(
   }
 
   const { entries, page, totalPages } = await getEconomyLeaderboard(guildId, targetPage, 10);
-  const embed = buildEconomyLeaderboardEmbed(guildName, entries, page, totalPages);
+  const serverTheme = await getServerTheme(guildId);
+  const embed = buildEconomyLeaderboardEmbed(guildName, entries, page, totalPages, serverTheme);
   const components = totalPages > 1 ? [buildRichPaginationRow(page, totalPages)] : [];
 
   await editInteractionResponse(token, {
@@ -165,10 +168,12 @@ export async function handleBalanceCommand(
     : undefined;
 
   const economyData = await getEconomyUser(guildId, targetUserId);
+  const userProfileStyle = await getUserProfileStyle(guildId, targetUserId);
   const embed = buildBalanceEmbed(
     { id: targetUserId, username, avatar },
     economyData,
     { id: guildId, name: 'Server' },
+    userProfileStyle,
   );
 
   await editInteractionResponse(token, {
@@ -203,7 +208,8 @@ export async function handleDailyCommand(
   const username = interaction.member?.user?.username || interaction.user?.username || 'Member';
 
   const result = await claimDaily(guildId, userId);
-  const embed = buildDailyEmbed({ id: userId, username }, result);
+  const userProfileStyle = await getUserProfileStyle(guildId, userId);
+  const embed = buildDailyEmbed({ id: userId, username }, result, userProfileStyle.balanceTheme);
 
   await editInteractionResponse(token, {
     embeds: [embed],
@@ -463,7 +469,8 @@ export async function handleShopCommand(
   const page = Math.max(1, Math.min(targetPage, totalPages));
   const paginatedItems = allItems.slice((page - 1) * pageSize, page * pageSize);
 
-  const embed = buildShopEmbed('Server', paginatedItems, page, totalPages);
+  const serverTheme = await getServerTheme(guildId);
+  const embed = buildShopEmbed('Server', paginatedItems, page, totalPages, serverTheme);
   const components = totalPages > 1 ? [buildShopPaginationRow(page, totalPages)] : [];
 
   await editInteractionResponse(token, {
@@ -765,7 +772,8 @@ export async function handleRichCommand(
   const targetPage = getOption<number>(options, 'page') || 1;
 
   const { entries, page, totalPages } = await getEconomyLeaderboard(guildId, targetPage, 10);
-  const embed = buildEconomyLeaderboardEmbed('Server', entries, page, totalPages);
+  const serverTheme = await getServerTheme(guildId);
+  const embed = buildEconomyLeaderboardEmbed('Server', entries, page, totalPages, serverTheme);
   const components = totalPages > 1 ? [buildRichPaginationRow(page, totalPages)] : [];
 
   await editInteractionResponse(token, {

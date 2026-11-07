@@ -1,6 +1,7 @@
 /**
  * src/lib/economy/economy-embeds.ts
- * Discord Embed presentation builders and pagination components for AiCord Server Economy.
+ * Discord Embed presentation builders and pagination components for AiCord Server Economy,
+ * featuring ATM Terminal styling, wealth tier badges, and theme foundation integration.
  */
 
 import type { APIEmbed } from 'discord-api-types/v10';
@@ -14,9 +15,81 @@ import type {
   EconomyLeaderboardEntry,
 } from './economy-service';
 import { getDailyStreakMultiplier } from './economy-service';
+import { getTheme, type BarStyle } from '@/lib/styles/themes';
+import type { UserProfileStyleData } from '@/lib/styles/user-profile-style';
 
-// ─── Visual Bar Helper ────────────────────────────────────────────────────
+// ─── Wealth Tier System ───────────────────────────────────────────────────
 
+export type WealthTier = 'Bronze' | 'Silver' | 'Gold' | 'Diamond';
+
+export interface WealthTierInfo {
+  tier: WealthTier;
+  badge: string;
+  emoji: string;
+  minNetWorth: number;
+}
+
+/**
+ * Resolves wealth tier status based on cumulative net worth.
+ * - Bronze: < 5,000 coins
+ * - Silver: 5,000 - 24,999 coins
+ * - Gold: 25,000 - 99,999 coins
+ * - Diamond: >= 100,000 coins
+ */
+export function getWealthTier(netWorth: number): WealthTierInfo {
+  if (netWorth >= 100_000) {
+    return { tier: 'Diamond', badge: '💎 Diamond Tycoon', emoji: '💎', minNetWorth: 100_000 };
+  }
+  if (netWorth >= 25_000) {
+    return { tier: 'Gold', badge: '🥇 Gold Investor', emoji: '🥇', minNetWorth: 25_000 };
+  }
+  if (netWorth >= 5_000) {
+    return { tier: 'Silver', badge: '🥈 Silver Merchant', emoji: '🥈', minNetWorth: 5_000 };
+  }
+  return { tier: 'Bronze', badge: '🥉 Bronze Saver', emoji: '🥉', minNetWorth: 0 };
+}
+
+// ─── Visual Bar Helpers ───────────────────────────────────────────────────
+
+/**
+ * Generates an ATM-style bank capacity meter string.
+ * Example: `[████████░░] 80% Full`
+ */
+export function renderBankCapacityMeter(
+  used: number,
+  total: number,
+  barStyle: BarStyle | string = 'blocks',
+  length: number = 10,
+): string {
+  if (total <= 0) return '`[░░░░░░░░░░]` 0% Full';
+  const ratio = Math.max(0, Math.min(1, used / total));
+  const safeLen = Math.max(4, Math.min(50, Math.floor(length)));
+  const filled = Math.round(ratio * safeLen);
+  const empty = safeLen - filled;
+  const percent = Math.round(ratio * 100);
+
+  let filledChar = '█';
+  let emptyChar = '░';
+  const normalized = (barStyle || 'blocks').toLowerCase().trim();
+
+  if (normalized === 'pipes') {
+    filledChar = '▰';
+    emptyChar = '▱';
+  } else if (normalized === 'squares') {
+    filledChar = '■';
+    emptyChar = '□';
+  } else if (normalized === 'retro') {
+    filledChar = '▓';
+    emptyChar = '░';
+  }
+
+  return `\`[${filledChar.repeat(filled)}${emptyChar.repeat(empty)}]\` ${percent}% Full`;
+}
+
+/**
+ * Legacy capacity bar renderer for backwards compatibility.
+ * Example: `[█████░░░░░] 50%`
+ */
 export function renderCapacityBar(used: number, total: number, length: number = 10): string {
   if (total <= 0) return '`[░░░░░░░░░░]` 0%';
   const ratio = Math.max(0, Math.min(1, used / total));
@@ -43,21 +116,43 @@ export function formatDuration(ms: number): string {
   return parts.join(' ') || '1s';
 }
 
-// ─── 1. Balance & Portfolio Embed ─────────────────────────────────────────
+// ─── 1. Balance & Portfolio Embed (ATM Terminal Card Layout) ──────────────
 
 export function buildBalanceEmbed(
   user: { id: string; username: string; avatar?: string },
   economyData: IEconomyUser,
   guild?: { id?: string; name?: string },
+  style?: Partial<UserProfileStyleData> | { theme?: string; balanceTheme?: string; barStyle?: string },
 ): APIEmbed {
   const netWorth = (economyData.wallet || 0) + (economyData.bank || 0);
-  const capacityBar = renderCapacityBar(economyData.bank || 0, economyData.bankCapacity || 5000);
+  const tier = getWealthTier(netWorth);
+
+  const themeId = style?.balanceTheme ?? (style as { theme?: string })?.theme ?? 'gold';
+  const theme = getTheme(themeId);
+  const barStyle = style?.barStyle ?? theme.barStyle ?? 'blocks';
+
+  const capacityMeter = renderBankCapacityMeter(
+    economyData.bank || 0,
+    economyData.bankCapacity || 5000,
+    barStyle,
+    10,
+  );
   const streak = economyData.dailyStreak || 0;
   const inventoryCount = economyData.inventory?.length || 0;
 
+  // ATM Terminal Receipt / Card Layout Banner
+  const terminalBanner =
+    `\`\`\`\n` +
+    `═══ 🏧 AICORD NATIONAL BANK ATM TERMINAL ═══\n` +
+    `CARDHOLDER:  ${user.username.toUpperCase()}\n` +
+    `WEALTH TIER: [${tier.tier.toUpperCase()}] ${tier.badge}\n` +
+    `══════════════════════════════════════════════\n` +
+    `\`\`\``;
+
   return {
-    title: `💰 ${user.username}'s Financial Portfolio`,
-    color: 0xf1c40f, // Gold
+    title: `💳 ATM Terminal • ${user.username}'s Financial Portfolio`,
+    description: terminalBanner,
+    color: style ? theme.primaryColor : 0xf1c40f, // Gold default
     thumbnail: user.avatar ? { url: user.avatar } : undefined,
     fields: [
       {
@@ -67,12 +162,12 @@ export function buildBalanceEmbed(
       },
       {
         name: '🏦 Bank',
-        value: `**${(economyData.bank || 0).toLocaleString()}** / ${(economyData.bankCapacity || 5000).toLocaleString()} coins\n${capacityBar}`,
+        value: `**${(economyData.bank || 0).toLocaleString()}** / ${(economyData.bankCapacity || 5000).toLocaleString()} coins\n${capacityMeter}`,
         inline: true,
       },
       {
         name: '💎 Net Worth',
-        value: `**${netWorth.toLocaleString()}** coins`,
+        value: `**${netWorth.toLocaleString()}** coins\nTier: **${tier.badge}**`,
         inline: true,
       },
       {
@@ -87,7 +182,9 @@ export function buildBalanceEmbed(
       },
     ],
     footer: {
-      text: guild?.name ? `${guild.name} • Server Economy` : 'AiCord Server Economy',
+      text: guild?.name
+        ? `${guild.name} • ATM Terminal #${user.id.slice(-4) || '0001'} • ${theme.name} Edition`
+        : `AiCord ATM Network • Terminal #${user.id.slice(-4) || '0001'} • ${theme.name} Edition`,
     },
     timestamp: new Date().toISOString(),
   };
@@ -98,7 +195,10 @@ export function buildBalanceEmbed(
 export function buildDailyEmbed(
   user: { id: string; username: string },
   result: ClaimDailyResult,
+  themeId?: string,
 ): APIEmbed {
+  const theme = getTheme(themeId ?? 'gold');
+
   if (result.alreadyClaimed) {
     const nextClaimTs = Math.floor((Date.now() + result.nextClaimInMs) / 1000);
     return {
@@ -107,8 +207,8 @@ export function buildDailyEmbed(
         `⏳ **Next claim available:** <t:${nextClaimTs}:R> (${formatDuration(result.nextClaimInMs)})\n` +
         `🔥 **Current Streak:** **${result.streak}** Day${result.streak === 1 ? '' : 's'}\n\n` +
         `*Come back after cooldown to maintain your streak bonus!*`,
-      color: 0xf39c12, // Amber
-      footer: { text: 'AiCord Daily Rewards' },
+      color: themeId ? theme.accentColor : 0xf39c12, // Amber or Theme Accent
+      footer: { text: `AiCord Daily Rewards • ${theme.name} Edition` },
       timestamp: new Date().toISOString(),
     };
   }
@@ -116,15 +216,26 @@ export function buildDailyEmbed(
   const multiplier = getDailyStreakMultiplier(result.streak);
   const streakEmoji = result.streak >= 10 ? '👑' : result.streak >= 5 ? '🔥' : '✨';
 
+  const receiptBox =
+    `\`\`\`\n` +
+    `═══ 🏧 AICORD DAILY REWARD RECEIPT ═══\n` +
+    `MEMBER:       ${user.username.toUpperCase()}\n` +
+    `DEPOSIT:      +${result.reward.toLocaleString()} COINS\n` +
+    `STREAK:       DAY ${result.streak} (${multiplier}x MULTIPLIER)\n` +
+    `WALLET TOTAL: ${result.newBalance.toLocaleString()} COINS\n` +
+    `═══════════════════════════════════════\n` +
+    `\`\`\``;
+
   return {
     title: `${streakEmoji} Daily Reward Claimed!`,
     description: `Congratulations **${user.username}**! You collected your daily coins.\n\n` +
+      `${receiptBox}\n` +
       `💰 **Reward Received:** **+${result.reward.toLocaleString()}** coins\n` +
       `🔥 **Daily Streak:** **${result.streak}** Day${result.streak === 1 ? '' : 's'} (${multiplier}x multiplier)\n` +
       `💳 **New Wallet Balance:** **${result.newBalance.toLocaleString()}** coins\n\n` +
       `*Claim again in 24 hours to keep your streak alive! (Expires after 48h)*`,
-    color: 0x2ecc71, // Emerald Green
-    footer: { text: 'AiCord Daily Rewards' },
+    color: themeId ? theme.primaryColor : 0x2ecc71, // Emerald Green or Theme Primary
+    footer: { text: `AiCord Daily Rewards • ${theme.name} Edition` },
     timestamp: new Date().toISOString(),
   };
 }
@@ -201,13 +312,17 @@ export function buildShopEmbed(
   items: IEconomyShopItem[],
   page: number,
   totalPages: number,
+  themeId?: string,
 ): APIEmbed {
+  const theme = getTheme(themeId);
+  const embedColor = themeId ? theme.primaryColor : 0x9b59b6;
+
   if (items.length === 0) {
     return {
       title: `🛒 ${guildName} — Server Shop`,
       description: 'The server shop is currently empty!\n\nServer managers can add items using `/shop-admin add`.',
-      color: 0x9b59b6, // Purple
-      footer: { text: `Page ${page} of ${totalPages} • AiCord Server Shop` },
+      color: embedColor,
+      footer: { text: `Page ${page} of ${totalPages} • AiCord Server Shop • ${theme.name}` },
       timestamp: new Date().toISOString(),
     };
   }
@@ -228,50 +343,66 @@ export function buildShopEmbed(
   return {
     title: `🛒 ${guildName} — Server Shop`,
     description: `Browse items available for purchase with your server coins.\nUse \`/buy <item_id>\` to purchase an item.`,
-    color: 0x9b59b6,
+    color: embedColor,
     fields: itemFields,
     footer: {
-      text: `Page ${page} of ${totalPages} • Use /buy <id> to purchase`,
+      text: `Page ${page} of ${totalPages} • Use /buy <id> to purchase • ${theme.name}`,
     },
     timestamp: new Date().toISOString(),
   };
 }
 
-// ─── 5. Wealth Leaderboard Embed ──────────────────────────────────────────
+// ─── 5. Wealth Leaderboard Embed (Podium Styling & Wealth Tiers) ──────────
 
 export function buildEconomyLeaderboardEmbed(
   guildName: string,
   entries: EconomyLeaderboardEntry[],
   page: number,
   totalPages: number,
+  themeId?: string,
 ): APIEmbed {
+  const theme = getTheme(themeId);
+  const embedColor = themeId ? theme.primaryColor : 0xf1c40f;
+
   if (entries.length === 0) {
     return {
       title: `🏆 ${guildName} — Wealth Leaderboard`,
       description: 'No economy data recorded yet for this server. Start earning with `/daily` and `/work`!',
-      color: 0xf1c40f,
-      footer: { text: `Page ${page} of ${totalPages} • AiCord Economy` },
+      color: embedColor,
+      footer: { text: `Page ${page} of ${totalPages} • AiCord Economy • ${theme.name}` },
       timestamp: new Date().toISOString(),
     };
   }
 
   const lines = entries.map((entry) => {
-    let medal = `\`#${entry.rank}\``;
-    if (entry.rank === 1) medal = '🥇';
-    else if (entry.rank === 2) medal = '🥈';
-    else if (entry.rank === 3) medal = '🥉';
+    const tier = getWealthTier(entry.netWorth);
+    let medal: string;
+    let rankPrefix = '';
+
+    if (entry.rank === 1) {
+      medal = '🥇';
+      rankPrefix = ' **[1ST PLACE]**';
+    } else if (entry.rank === 2) {
+      medal = '🥈';
+      rankPrefix = ' **[2ND PLACE]**';
+    } else if (entry.rank === 3) {
+      medal = '🥉';
+      rankPrefix = ' **[3RD PLACE]**';
+    } else {
+      medal = `\`#${entry.rank}\``;
+    }
 
     const streakText = entry.dailyStreak > 0 ? ` • 🔥 ${entry.dailyStreak}d` : '';
-    return `${medal} <@${entry.userId}> — **${entry.netWorth.toLocaleString()}** coins\n` +
-      `   *Wallet: ${entry.wallet.toLocaleString()} • Bank: ${entry.bank.toLocaleString()}${streakText}*`;
+    return `${medal}${rankPrefix} <@${entry.userId}> — **${entry.netWorth.toLocaleString()}** coins\n` +
+      `   └ Tier: **${tier.badge}** • *Wallet: ${entry.wallet.toLocaleString()} • Bank: ${entry.bank.toLocaleString()}${streakText}*`;
   });
 
   return {
     title: `🏆 ${guildName} — Wealth Leaderboard`,
     description: lines.join('\n\n'),
-    color: 0xf1c40f,
+    color: embedColor,
     footer: {
-      text: `Page ${page} of ${totalPages} • Server Richest Members`,
+      text: `Page ${page} of ${totalPages} • Server Richest Members • ${theme.name}`,
     },
     timestamp: new Date().toISOString(),
   };
