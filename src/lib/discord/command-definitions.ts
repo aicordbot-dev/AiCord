@@ -27,7 +27,7 @@ export interface CommandDefinition {
 export const COMMANDS: CommandDefinition[] = getAllDiscordCommandJson() as CommandDefinition[];
 
 /**
- * Retrieve all registered application commands across all active suites (Builtin, Games, Levels, Economy, Custom Screens, Premium, Tickets, Birthdays, Reaction Roles).
+ * Retrieve all registered application commands across all active suites (Builtin, Games, Levels, Economy, Custom Screens, Premium, Tickets, Birthdays, Reaction Roles, Starboard).
  */
 export function getAllApplicationCommands(): CommandDefinition[] {
   registerAllCommands();

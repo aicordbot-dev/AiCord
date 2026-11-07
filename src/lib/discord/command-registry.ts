@@ -58,6 +58,7 @@ import { premiumCommand } from '@/commands/premium';
 import { ticketCommand } from '@/commands/tickets';
 import { birthdayCommand } from '@/commands/birthdays';
 import { reactionRoleCommand } from '@/commands/reaction-roles';
+import { starboardCommand } from '@/commands/starboard';
 
 // ─── Interfaces ───────────────────────────────────────────────────────────
 
@@ -203,6 +204,7 @@ const TICKET_COMMAND_NAMES = new Set(['ticket']);
 const BIRTHDAY_COMMAND_NAMES = new Set(['birthday']);
 
 const REACTION_ROLE_COMMAND_NAMES = new Set(['reaction-role']);
+const STARBOARD_COMMAND_NAMES = new Set(['starboard']);
 
 /**
  * Retrieve a registered command by its primary name.
@@ -239,6 +241,10 @@ export function getCommand(name: string): RegisteredCommand | undefined {
   }
   if (!cmd && REACTION_ROLE_COMMAND_NAMES.has(name)) {
     registerReactionRoleCommands();
+    cmd = registry.get(name);
+  }
+  if (!cmd && STARBOARD_COMMAND_NAMES.has(name)) {
+    registerStarboardCommands();
     cmd = registry.get(name);
   }
   return cmd;
@@ -343,6 +349,13 @@ export function registerReactionRoleCommands(): void {
 }
 
 /**
+ * Register all Milestone 3 Service 11 Starboard commands into the registry.
+ */
+export function registerStarboardCommands(): void {
+  registerCommand(starboardCommand);
+}
+
+/**
  * Register all commands across all suites.
  */
 export function registerAllCommands(): void {
@@ -357,6 +370,7 @@ export function registerAllCommands(): void {
   registerTicketCommands();
   registerBirthdayCommands();
   registerReactionRoleCommands();
+  registerStarboardCommands();
 }
 
 /**

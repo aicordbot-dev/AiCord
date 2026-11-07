@@ -22,6 +22,8 @@ export { TicketPanel } from './TicketPanel';
 export { Ticket } from './Ticket';
 export { UserBirthday } from './UserBirthday';
 export { BirthdayConfig } from './BirthdayConfig';
+export { StarboardConfig } from './StarboardConfig';
+export { StarboardMessage } from './StarboardMessage';
 
 export type { IGuildConfig } from './GuildConfig';
 export type { IBuildJob, BuildJobStatus, CreatedIds, BuildStep } from './BuildJob';
@@ -47,3 +49,5 @@ export type { ITicketPanel, TicketPanelCategory } from './TicketPanel';
 export type { ITicket, TicketStatus } from './Ticket';
 export type { IUserBirthday } from './UserBirthday';
 export type { IBirthdayConfig } from './BirthdayConfig';
+export type { IStarboardConfig } from './StarboardConfig';
+export type { IStarboardMessage } from './StarboardMessage';
