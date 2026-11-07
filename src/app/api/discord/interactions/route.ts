@@ -439,6 +439,11 @@ async function handleComponentAsync(
       await handleReactionRoleComponent(token, customId, userId, guildId, component);
       break;
     }
+    case 'adv_choice': {
+      const { handleAdventureComponent } = await import('@/commands/adventure');
+      await handleAdventureComponent(token, customId, userId, guildId, component);
+      break;
+    }
     default: {
       console.warn(`[Interactions] Unknown component action: ${action}`);
     }

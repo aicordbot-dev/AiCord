@@ -24,6 +24,7 @@ export { UserBirthday } from './UserBirthday';
 export { BirthdayConfig } from './BirthdayConfig';
 export { StarboardConfig } from './StarboardConfig';
 export { StarboardMessage } from './StarboardMessage';
+export { AdventurePlayer } from './AdventurePlayer';
 
 export type { IGuildConfig } from './GuildConfig';
 export type { IBuildJob, BuildJobStatus, CreatedIds, BuildStep } from './BuildJob';
@@ -51,3 +52,10 @@ export type { IUserBirthday } from './UserBirthday';
 export type { IBirthdayConfig } from './BirthdayConfig';
 export type { IStarboardConfig } from './StarboardConfig';
 export type { IStarboardMessage } from './StarboardMessage';
+export type {
+  IAdventurePlayer,
+  AdventureClass,
+  AdventureItem,
+  AdventureItemType,
+  AdventureDungeonState,
+} from './AdventurePlayer';

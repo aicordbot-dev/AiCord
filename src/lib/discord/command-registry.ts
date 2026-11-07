@@ -60,6 +60,7 @@ import { birthdayCommand } from '@/commands/birthdays';
 import { reactionRoleCommand } from '@/commands/reaction-roles';
 import { starboardCommand } from '@/commands/starboard';
 import { categoryCommand } from '@/commands/category';
+import { adventureCommand } from '@/commands/adventure';
 import {
   banCommand,
   kickCommand,
@@ -221,6 +222,7 @@ const STANDALONE_MOD_COMMAND_NAMES = new Set([
   'warn',
   'purge',
 ]);
+const ADVENTURE_COMMAND_NAMES = new Set(['adventure']);
 
 /**
  * Retrieve a registered command by its primary name.
@@ -269,6 +271,10 @@ export function getCommand(name: string): RegisteredCommand | undefined {
   }
   if (!cmd && STANDALONE_MOD_COMMAND_NAMES.has(name)) {
     registerStandaloneModCommands();
+    cmd = registry.get(name);
+  }
+  if (!cmd && ADVENTURE_COMMAND_NAMES.has(name)) {
+    registerAdventureCommands();
     cmd = registry.get(name);
   }
   return cmd;
@@ -395,6 +401,13 @@ export function registerStandaloneModCommands(): void {
   registerCommand(timeoutCommand);
   registerCommand(warnCommand);
   registerCommand(purgeCommand);
+}
+
+/**
+ * Register all Service 20 Gemini RPG Adventure commands into the registry.
+ */
+export function registerAdventureCommands(): void {
+  registerCommand(adventureCommand);
 }
 
 /**
