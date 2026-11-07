@@ -38,3 +38,12 @@
 | P29 | Public API + webhooks | todo | |
 | P37 | Trust network | todo | |
 | P38 | Paid roles | todo | |
+
+## Infrastructure & Serverless Stability Notes
+
+### Vercel Serverless Interaction Lifecycle & Webhook Auth Fix
+- **Next.js `after()` Lifecycle**: Resolved serverless function early termination issues on Vercel where fire-and-forget background promises were interrupted immediately after returning the initial deferred response (`NextResponse.json(...)`). Routed asynchronous command execution (`handleCommandInteraction`), interactive component processing (`handleComponentAsync`), and modal submissions (`handleBuildModalSubmit`) through Next.js App Router's `after()` callback to guarantee the lambda execution context stays active until webhook updates finish.
+- **Webhook Patch Authentication (`{ auth: false }`)**: Resolved Discord REST 401 Unauthorized errors during interaction response edits and follow-ups. Discord interaction webhook endpoints (`/webhooks/:application_id/:interaction_token/messages/@original`) are authenticated by the interaction token itself and reject `Bot <token>` Authorization headers. Explicitly passed `{ auth: false }` to `@discordjs/rest` PATCH, POST, and DELETE calls across `editInteractionResponse`, `sendFollowUp`, `deleteInteractionResponse`, and `deleteFollowupMessage`.
+- **Lambda Timeout Configuration (`maxDuration = 60`)**: Exported `export const maxDuration = 60;` in `src/app/api/discord/interactions/route.ts` to provide up to 60 seconds of execution headroom on Vercel Serverless Functions, comfortably accommodating multi-step operations such as AI blueprint generation, database synchronization, and Discord API creation calls.
+- **Resilient App ID & Bot Token Resolution**: Implemented prioritized fallback resolution in `resolveApplicationId(appId)` (`interaction.application_id` → `process.env.DISCORD_APP_ID` → `process.env.DISCORD_CLIENT_ID` → safe `env.DISCORD_APP_ID` try/catch) and `resolveBotToken()` (`env.DISCORD_BOT_TOKEN` → `process.env.DISCORD_BOT_TOKEN`) so webhook routing and REST clients never fail from missing or unvalidated environment schema wrappers during cold starts.
+
