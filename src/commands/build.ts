@@ -28,6 +28,7 @@ import type { RegisteredCommand } from '@/lib/discord/command-registry';
 import { PermissionFlags } from '@/lib/discord/permissions';
 import type { ServerBlueprint } from '@/lib/ai/blueprint.schema';
 import { generateBlueprint, SERVER_TEMPLATES } from '@/lib/ai/generate-blueprint';
+import { getPreset, getPresetChoices } from '@/lib/build/presets';
 import {
   buildBlueprintPreviewEmbeds,
   buildBlueprintActionRows,
@@ -61,14 +62,66 @@ export async function handleBuildCommand(
   const templateOption = options.find(
     (o): o is APIApplicationCommandInteractionDataStringOption => o.name === 'template',
   );
+  const presetOption = options.find(
+    (o): o is APIApplicationCommandInteractionDataStringOption => o.name === 'preset',
+  );
 
-  const description = descriptionOption?.value ?? '';
+  const description = descriptionOption?.value?.trim() ?? '';
   const template = templateOption?.value as keyof typeof SERVER_TEMPLATES | undefined;
+  const presetId = presetOption?.value?.trim();
 
-  if (!description && !template) {
+  if (!description && !template && !presetId) {
     await editInteractionResponse(token, {
-      embeds: [errorEmbed('Missing Description', 'Please provide a description for your server.')],
+      embeds: [
+        errorEmbed(
+          'Missing Input',
+          'Please provide a description, or choose an architecture preset or template for your server.',
+        ),
+      ],
       ephemeral: true,
+    });
+    return;
+  }
+
+  // If user selected an architecture preset without a custom prompt, load preset directly!
+  if (presetId && !description) {
+    const presetBlueprint = getPreset(presetId);
+    if (!presetBlueprint) {
+      await editInteractionResponse(token, {
+        embeds: [errorEmbed('Invalid Preset', `Preset "${presetId}" was not found.`)],
+        ephemeral: true,
+      });
+      return;
+    }
+
+    const job = await BuildJob.create({
+      guildId,
+      userId,
+      interactionToken: token,
+      channelId,
+      status: 'preview',
+      description: `Preset: ${presetBlueprint.name}`,
+      blueprint: presetBlueprint,
+      steps: [],
+      createdIds: { roles: [], categories: [], channels: [], messages: [] },
+    });
+
+    await AuditLog.create({
+      guildId,
+      type: 'ai_build',
+      userId,
+      userTag,
+      prompt: `Preset: ${presetBlueprint.name}`,
+      result: 'success',
+      metadata: { jobId: job._id.toString(), blueprintName: presetBlueprint.name, presetId },
+    });
+
+    const previewEmbeds = buildBlueprintPreviewEmbeds(presetBlueprint, 'structure');
+    const actionRows = buildBlueprintActionRows(job._id.toString(), 'structure');
+
+    await editInteractionResponse(token, {
+      embeds: previewEmbeds,
+      components: actionRows,
     });
     return;
   }
@@ -87,6 +140,7 @@ export async function handleBuildCommand(
     const { blueprint, safetyErrors } = await generateBlueprint({
       description,
       template,
+      preset: presetId,
     });
 
     if (safetyErrors && safetyErrors.length > 0) {
@@ -155,118 +209,15 @@ export async function handleBuildConfirm(
   jobId: string,
   userId: string,
 ): Promise<void> {
-  await connectDB();
-
-  const job = await BuildJob.findById(jobId);
-  if (!job || job.status !== 'preview') {
-    await editInteractionResponse(token, {
-      embeds: [errorEmbed('Invalid Action', 'This build job is no longer available.')],
-      ephemeral: true,
-    });
-    return;
-  }
-
-  // Only the original requester can confirm
-  if (job.userId !== userId) {
-    await editInteractionResponse(token, {
-      embeds: [errorEmbed('No Permission', 'Only the person who started this build can confirm it.')],
-      ephemeral: true,
-    });
-    return;
-  }
-
-  const previousToken = job.interactionToken;
-  job.status = 'running';
-  job.interactionToken = token;
-  await job.save();
-
-  // Helper to reliably edit the interaction response, trying token first then previousToken
-  const safeEdit = async (opts: Parameters<typeof editInteractionResponse>[1]) => {
-    try {
-      await editInteractionResponse(token, opts);
-      return;
-    } catch (err) {
-      console.warn('[handleBuildConfirm] editInteractionResponse with button token failed:', err);
-    }
-
-    if (previousToken && previousToken !== token) {
-      try {
-        await editInteractionResponse(previousToken, opts);
-      } catch (err2) {
-        console.warn('[handleBuildConfirm] editInteractionResponse with previousToken failed:', err2);
-      }
-    }
-  };
-
-  // Import here to avoid circular deps
-  const { applyBlueprint } = await import('@/lib/discord/build-applier');
-  const { progressEmbed, errorEmbed: errEmbed } = await import('@/lib/discord/embeds');
-  const { buildUndoRow } = await import('@/lib/discord/interaction-response');
-  const { buildBuildCompletionEmbed } = await import('@/lib/discord/blueprint-preview');
-
+  const { applyBuildJob } = await import('@/lib/discord/build-applier');
   try {
-    const result = await applyBlueprint({
-      guildId: job.guildId,
-      blueprint: job.blueprint as Parameters<typeof applyBlueprint>[0]['blueprint'],
-      onProgress: async (steps) => {
-        job.steps = steps;
-        await job.save().catch(() => {});
-        await safeEdit({
-          embeds: [progressEmbed('Building your server…', steps)],
-          components: [],
-        });
-      },
+    await applyBuildJob({
+      jobId,
+      interactionToken: token,
+      userId,
     });
-
-    if (result.success) {
-      job.status = 'done';
-      job.createdIds = result.createdIds;
-      job.steps = result.steps;
-      await job.save();
-
-      const completionEmbed = buildBuildCompletionEmbed(
-        job.blueprint as Parameters<typeof applyBlueprint>[0]['blueprint'],
-        result.createdIds,
-        result.steps,
-      );
-
-      await safeEdit({
-        embeds: [completionEmbed],
-        components: [buildUndoRow(job._id.toString())],
-      });
-    } else {
-      job.status = 'failed';
-      job.errorMessage = result.error;
-      job.createdIds = result.createdIds;
-      job.steps = result.steps;
-      await job.save();
-
-      const hasCreatedItems =
-        (result.createdIds.roles?.length ?? 0) > 0 ||
-        (result.createdIds.categories?.length ?? 0) > 0 ||
-        (result.createdIds.channels?.length ?? 0) > 0;
-
-      await safeEdit({
-        embeds: [
-          progressEmbed('Build Failed', result.steps),
-          errEmbed('Build Error', result.error ?? 'An unknown error occurred'),
-        ],
-        components: hasCreatedItems ? [buildUndoRow(job._id.toString())] : [],
-      });
-    }
   } catch (err) {
-    console.error('[handleBuildConfirm] Unhandled build execution error:', err);
-    job.status = 'failed';
-    job.errorMessage = err instanceof Error ? err.message : String(err);
-    await job.save().catch(() => {});
-
-    await safeEdit({
-      embeds: [
-        progressEmbed('Build Failed', job.steps || []),
-        errEmbed('Build Error', err instanceof Error ? err.message : 'An unexpected error occurred'),
-      ],
-      components: [buildUndoRow(job._id.toString())],
-    });
+    console.error('[handleBuildConfirm] Error executing applyBuildJob:', err);
   }
 }
 
@@ -626,6 +577,13 @@ export const buildCommand: RegisteredCommand = {
       max_length: 500,
     },
     {
+      name: 'preset',
+      description: 'Quick-start from a curated, production-ready server architecture preset',
+      type: ApplicationCommandOptionType.String,
+      required: false,
+      choices: getPresetChoices().map((p) => ({ name: p.name, value: p.value })),
+    },
+    {
       name: 'template',
       description: 'Start from a pre-defined template',
       type: ApplicationCommandOptionType.String,
@@ -641,6 +599,18 @@ export const buildCommand: RegisteredCommand = {
   ],
   execute: handleBuildCommand,
   autocomplete: async (ctx) => {
+    if (ctx.focusedOption.name === 'preset') {
+      const query = ctx.focusedOption.value.toLowerCase();
+      const choices = getPresetChoices();
+      return choices
+        .filter(
+          (p) =>
+            p.name.toLowerCase().includes(query) ||
+            p.value.toLowerCase().includes(query) ||
+            p.description.toLowerCase().includes(query),
+        )
+        .map((p) => ({ name: p.name, value: p.value }));
+    }
     if (ctx.focusedOption.name === 'template') {
       const query = ctx.focusedOption.value.toLowerCase();
       const templates = [

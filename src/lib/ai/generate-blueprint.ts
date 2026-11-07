@@ -6,6 +6,7 @@
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { generateObject } from 'ai';
 import { ServerBlueprintSchema, type ServerBlueprint, validateBlueprintSafety } from './blueprint.schema';
+import { getPreset } from '@/lib/build/presets';
 import { env } from '@/lib/env';
 
 function getGoogleProvider() {
@@ -46,6 +47,7 @@ export const GEMINI_FALLBACK_MODELS = [
 export interface GenerateBlueprintOptions {
   description: string;
   template?: keyof typeof SERVER_TEMPLATES;
+  preset?: string;
   guildName?: string;
 }
 
@@ -61,11 +63,25 @@ export interface GenerateBlueprintResult {
 export async function generateBlueprint(
   options: GenerateBlueprintOptions,
 ): Promise<GenerateBlueprintResult> {
-  const { description, template, guildName } = options;
+  const { description, template, preset, guildName } = options;
 
-  const userPrompt = template
+  let presetContext = '';
+  if (preset) {
+    const basePreset = getPreset(preset);
+    if (basePreset) {
+      const catSummary = basePreset.categories
+        .map((c) => `${c.name} [${c.channels.map((ch) => ch.name).join(', ')}]`)
+        .join('; ');
+      const roleSummary = basePreset.roles.map((r) => r.name).join(', ');
+      presetContext = `\n\nBase Architecture Preset: "${basePreset.name}"\nPreset Categories: ${catSummary}\nPreset Roles: ${roleSummary}\nInstructions: Customize, extend, and adapt this base architecture preset based on the user's requirements below.`;
+    }
+  }
+
+  const basePrompt = template
     ? `Create a ${SERVER_TEMPLATES[template]} Customize it based on this additional description: ${description}`
     : `Create a Discord server for: ${description}${guildName ? `\nServer name: ${guildName}` : ''}`;
+
+  const userPrompt = presetContext ? `${basePrompt}${presetContext}` : basePrompt;
 
   let blueprint: ServerBlueprint | null = null;
   let lastError: unknown = null;

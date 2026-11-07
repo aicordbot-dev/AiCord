@@ -31,6 +31,10 @@ export function resetDiscordRest(): void {
   _rest = null;
 }
 
+export function setDiscordRest(mock: REST | null): void {
+  _rest = mock;
+}
+
 /**
  * Wraps a Discord REST call with exponential backoff on 429 rate limits.
  * The @discordjs/rest client handles rate limits internally, but this provides

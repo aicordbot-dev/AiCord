@@ -26,6 +26,10 @@ function resolveMongoUri(): string {
 }
 
 export async function connectDB(): Promise<typeof mongoose> {
+  if (process.env.NODE_ENV === 'test') {
+    return mongoose;
+  }
+
   if (cached) {
     return cached;
   }
