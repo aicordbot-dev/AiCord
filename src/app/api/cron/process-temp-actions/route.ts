@@ -1,6 +1,7 @@
 /**
  * src/app/api/cron/process-temp-actions/route.ts
- * Vercel Cron: Expire temp bans, temp timeouts, and temp roles.
+ * Vercel Cron: Expire temp bans, temp timeouts, and temp roles,
+ * and execute automated daily birthday celebrations.
  * Schedule: every 5 minutes (see vercel.json)
  */
 
@@ -11,6 +12,7 @@ import { TempAction } from '@/models/TempAction';
 import { ModCase } from '@/models/ModCase';
 import { getDiscordRest, discordApiCall } from '@/lib/discord/rest';
 import { Routes } from 'discord-api-types/v10';
+import { triggerDailyBirthdaysForAllGuilds } from '@/lib/birthdays/birthday-service';
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
   // Verify cron secret
@@ -85,6 +87,22 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     }
   }
 
-  console.log(`[TempAction Cron] Processed: ${processed}, Failed: ${failed}`);
-  return NextResponse.json({ processed, failed, timestamp: now.toISOString() });
+  // Trigger automated daily birthday celebrations across servers
+  let celebrationsCount = 0;
+  try {
+    const celebrations = await triggerDailyBirthdaysForAllGuilds(now);
+    celebrationsCount = celebrations.length;
+  } catch (bdayErr) {
+    console.error('[TempAction Cron] Failed to trigger daily birthdays:', bdayErr);
+  }
+
+  console.log(
+    `[TempAction Cron] Processed: ${processed}, Failed: ${failed}, Birthdays: ${celebrationsCount}`,
+  );
+  return NextResponse.json({
+    processed,
+    failed,
+    celebrations: celebrationsCount,
+    timestamp: now.toISOString(),
+  });
 }

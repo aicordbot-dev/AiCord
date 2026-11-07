@@ -56,6 +56,7 @@ import {
 import { customizeCommand } from '@/commands/customize';
 import { premiumCommand } from '@/commands/premium';
 import { ticketCommand } from '@/commands/tickets';
+import { birthdayCommand } from '@/commands/birthdays';
 
 // ─── Interfaces ───────────────────────────────────────────────────────────
 
@@ -198,6 +199,8 @@ const PREMIUM_COMMAND_NAMES = new Set(['premium']);
 
 const TICKET_COMMAND_NAMES = new Set(['ticket']);
 
+const BIRTHDAY_COMMAND_NAMES = new Set(['birthday']);
+
 /**
  * Retrieve a registered command by its primary name.
  */
@@ -225,6 +228,10 @@ export function getCommand(name: string): RegisteredCommand | undefined {
   }
   if (!cmd && TICKET_COMMAND_NAMES.has(name)) {
     registerTicketCommands();
+    cmd = registry.get(name);
+  }
+  if (!cmd && BIRTHDAY_COMMAND_NAMES.has(name)) {
+    registerBirthdayCommands();
     cmd = registry.get(name);
   }
   return cmd;
@@ -315,6 +322,13 @@ export function registerTicketCommands(): void {
 }
 
 /**
+ * Register all Automated Birthday Celebrations commands into the registry.
+ */
+export function registerBirthdayCommands(): void {
+  registerCommand(birthdayCommand);
+}
+
+/**
  * Register all commands across all suites.
  */
 export function registerAllCommands(): void {
@@ -327,6 +341,7 @@ export function registerAllCommands(): void {
   registerCustomizeCommands();
   registerPremiumCommands();
   registerTicketCommands();
+  registerBirthdayCommands();
 }
 
 /**

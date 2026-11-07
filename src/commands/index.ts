@@ -14,3 +14,4 @@ export * from './economy';
 export * from './customize';
 export * from './premium';
 export * from './tickets';
+export * from './birthdays';
