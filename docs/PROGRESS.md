@@ -11,7 +11,7 @@
 | P4 | /ai management | todo | |
 | P5 | Dashboard | todo | |
 | P6 | Worker | todo | |
-| P7 | Plans + billing | todo | |
+| P7 | Server-Wide Subscriptions & Entitlements (Milestone 2) | done | Server-wide subscription entitlement engine, multi-tier matrix (Free, Pro, Ultimate, Lifetime), HMAC-signed cryptographic license keys, double-redemption prevention, expiration checks, granular feature gating across all bot commands, and interactive /premium command with tab navigation, tier comparison matrix, and instant key redemption. 452 passing unit tests. 0 typecheck errors. |
 | P23 | Levels | done | Comprehensive Levels & XP Progression System & Automated Role Rewards: MongoDB models (UserLevel, LevelConfig), quadratic XP progression formula (XP = 5*N^2 + 50*N + 100), visual rank cards with custom progress bar rendering, server XP leaderboard with medal badges (🥇, 🥈, 🥉), TemplateEngine-integrated level-up announcements, 60s anti-spam sliding-window cooldown, ignored channels/roles, XP multipliers, automated role rewards on level thresholds, slash commands (/rank, /leaderboard, /level-rewards, /level-config) registered under category 'levels', and component webhook pagination routing. 254 unit tests passing (47 new tests). 0 typecheck errors, 0 lint warnings. |
 | P24 | Birthdays + welcome | todo | |
 | P15 | Tickets | todo | |
@@ -90,6 +90,43 @@
   - `/daily`: ATM deposit receipt embed with streak multiplier tracking, daily bonus payout, and updated bank balance.
   - `/shop`: Server-themed shopping catalog embed displaying item IDs, icons, prices, stock levels, and automated Discord role rewards.
   - `/rich`: Server wealth leaderboard featuring Olympic podium medals (🥇, 🥈, 🥉) and wealth tier badges (Bronze, Silver, Gold, Diamond) across all ranked members.
+
+## Milestone 2: Server-Wide Subscription & Entitlement Engine
+
+### Multi-Tier Subscription & Entitlement Matrix
+- **Tier Architecture (`src/models/GuildSubscription.ts`, `src/lib/premium/entitlements.ts`)**:
+  - `free`: Essential bot capabilities, 3 builds/mo, 3 tickets, 10 shop items, 2 unlocked themes (`cyberpunk`, `frost`).
+  - `pro`: Advanced automation for growing communities, 15 builds/mo, 25 tickets, 50 shop items, all 6 themes + 4 bar styles, WhatsApp announcements bridge, boss raids, and 5 server backups.
+  - `ultimate`: Powerhouse infrastructure with unlimited builds, tickets, shop items, custom hex colors, 24/7 endless radio, full WhatsApp bridge (panic button + modmail), 20 backups, and 100 AI TL;DR summaries/mo.
+  - `lifetime`: Permanent VIP patron tier with unlimited access to all present and future features, permanent validity (`expiresAt: null`), unlimited backups, and full AI TL;DR suite.
+- **Granular Feature Gating (`checkFeatureAccess`, `isThemeUnlocked`)**:
+  - Unified gatekeeper functions querying cached or persisted guild subscriptions.
+  - Numeric limits check (`-1` represents unlimited quota).
+  - Boolean flag validation for specialized modules (WhatsApp, 24/7 radio, backups, boss raids, AI TL;DR).
+  - Theme unlock verification for aesthetic customization options.
+
+### Cryptographic HMAC-Signed License Keys
+- **HMAC-SHA256 Signature Architecture**:
+  - License format: `AICORD-<TIER>-<DURATION>-<NONCE>-<CHECKSUM>` (e.g. `AICORD-PRO-30D-A1B2C3D4-E5F67890` or `AICORD-LIFETIME-PERM-A1B2C3D4-E5F67890`).
+  - Cryptographically signed with SHA-256 HMAC checksum to prevent key forgery or tampering.
+  - Key validation parses tier and duration, recalculates expected checksum, and rejects corrupted keys.
+- **Key Redemption & Lifetime Seeding (`redeemLicenseKey`, `scripts/seed-lifetime-license.ts`)**:
+  - Single-use redemption logic preventing reuse across guilds or multiple attempts on the same guild.
+  - Automatic expiration extension when stacking keys of the same tier.
+  - Administrative seeding script (`scripts/seed-lifetime-license.ts`) for direct database provisioning of permanent Lifetime licenses for founder guilds and VIP patrons.
+
+### Interactive `/premium` Slash Command Suite
+- **Command Structure (`src/commands/premium.ts`)**:
+  - `/premium status`: Comprehensive server overview displaying active tier badge (🆓 Free, ⚡ Pro, 👑 Ultimate, ♾️ Lifetime), owner details, expiration countdown / permanent status, and a detailed active feature checklist.
+  - `/premium tiers`: Interactive multi-tier comparison view featuring tab buttons (`free`, `pro`, `ultimate`, `lifetime`) allowing server admins to inspect feature differences and perk allowances with live UI updates.
+  - `/premium redeem <license_key>`: Instant license key redemption that validates HMAC signatures, applies the upgraded tier immediately, persists to MongoDB, and returns a celebratory embed.
+
+### Verification & Test Coverage
+- **452 Passing Unit Tests**:
+  - Full suite testing HMAC key generation, tampering detection, valid/invalid checksums, tier parsing, and expiration handling.
+  - Redemption tests confirming tier upgrades, double-redemption rejection, and expiration stacking.
+  - Complete slash command test suite for `/premium status`, `/premium tiers`, and `/premium redeem`.
+- **Zero Typecheck Errors**: Clean `tsc --noEmit` across all codebase modules.
 
 ## Infrastructure & Serverless Stability Notes
 
