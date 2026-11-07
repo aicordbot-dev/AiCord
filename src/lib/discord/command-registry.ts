@@ -57,6 +57,7 @@ import { customizeCommand } from '@/commands/customize';
 import { premiumCommand } from '@/commands/premium';
 import { ticketCommand } from '@/commands/tickets';
 import { birthdayCommand } from '@/commands/birthdays';
+import { reactionRoleCommand } from '@/commands/reaction-roles';
 
 // ─── Interfaces ───────────────────────────────────────────────────────────
 
@@ -201,6 +202,8 @@ const TICKET_COMMAND_NAMES = new Set(['ticket']);
 
 const BIRTHDAY_COMMAND_NAMES = new Set(['birthday']);
 
+const REACTION_ROLE_COMMAND_NAMES = new Set(['reaction-role']);
+
 /**
  * Retrieve a registered command by its primary name.
  */
@@ -232,6 +235,10 @@ export function getCommand(name: string): RegisteredCommand | undefined {
   }
   if (!cmd && BIRTHDAY_COMMAND_NAMES.has(name)) {
     registerBirthdayCommands();
+    cmd = registry.get(name);
+  }
+  if (!cmd && REACTION_ROLE_COMMAND_NAMES.has(name)) {
+    registerReactionRoleCommands();
     cmd = registry.get(name);
   }
   return cmd;
@@ -329,6 +336,13 @@ export function registerBirthdayCommands(): void {
 }
 
 /**
+ * Register all Milestone 3 Service 10 Reaction Role commands into the registry.
+ */
+export function registerReactionRoleCommands(): void {
+  registerCommand(reactionRoleCommand);
+}
+
+/**
  * Register all commands across all suites.
  */
 export function registerAllCommands(): void {
@@ -342,6 +356,7 @@ export function registerAllCommands(): void {
   registerPremiumCommands();
   registerTicketCommands();
   registerBirthdayCommands();
+  registerReactionRoleCommands();
 }
 
 /**

@@ -16,7 +16,7 @@ export interface RolePanelEntry {
 
 export interface IRolePanel extends Document {
   guildId: string;
-  channelId: string;
+  channelId?: string;
   messageId?: string;
   title: string;
   description?: string;
@@ -33,7 +33,7 @@ export interface IRolePanel extends Document {
 const RolePanelSchema = new Schema<IRolePanel>(
   {
     guildId: { type: String, required: true, index: true },
-    channelId: { type: String, required: true },
+    channelId: { type: String, required: false },
     messageId: String,
     title: { type: String, required: true, maxlength: 256 },
     description: { type: String, maxlength: 4096 },

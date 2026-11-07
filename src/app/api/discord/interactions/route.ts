@@ -433,6 +433,12 @@ async function handleComponentAsync(
       await handleTicketComponent(token, customId, userId, guildId, component);
       break;
     }
+    case 'rr_toggle':
+    case 'rr_select': {
+      const { handleReactionRoleComponent } = await import('@/commands/reaction-roles');
+      await handleReactionRoleComponent(token, customId, userId, guildId, component);
+      break;
+    }
     default: {
       console.warn(`[Interactions] Unknown component action: ${action}`);
     }

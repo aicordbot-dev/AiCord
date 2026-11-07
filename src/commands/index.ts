@@ -15,3 +15,4 @@ export * from './customize';
 export * from './premium';
 export * from './tickets';
 export * from './birthdays';
+export * from './reaction-roles';
