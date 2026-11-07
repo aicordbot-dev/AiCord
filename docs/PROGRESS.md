@@ -38,6 +38,58 @@
 | P29 | Public API + webhooks | todo | |
 | P37 | Trust network | todo | |
 | P38 | Paid roles | todo | |
+| UCS-1 | Universal Theme & Style Engine | done | Phase 1 of Universal Custom Screens Suite: `themes.ts` with 6 aesthetic themes (Cyberpunk, Midnight, Emerald, Gold, Retro, Frost), 4 bar styles (pipes, blocks, squares, retro), `UserProfileStyle` MongoDB model, `/customize` slash command (`profile`, `preview`, `server-theme`) with live interactive button-switcher, dynamic autocomplete, and rate limiting. |
+| UCS-2 | Enhanced Custom Screens (Levels & Economy) | done | Phase 2 of Universal Custom Screens Suite: Themed `/rank` player card with achievement badges and custom bar styles; `/leaderboard` with Olympic podium styling (🥇, 🥈, 🥉); `/balance` ATM Terminal card layout with wealth tiers (Bronze, Silver, Gold, Diamond) and bank capacity utilization meter; themed `/daily` ATM deposit receipts, `/shop` catalog, and `/rich` wealth leaderboard. |
+
+## Universal Custom Screens Suite
+
+### Phase 1: Universal Theme & Style Engine
+- **Universal Theme Foundation (`themes.ts`)**: Modular, extensible theming architecture providing 6 distinct visual themes:
+  - `cyberpunk`: Neon cyan & magenta palette with high-tech borders and cybernetic ornamentation (`⚡`, `[CYBERPUNK]`).
+  - `midnight`: Deep dark-violet & indigo palette with celestial moon accents (`🌙`, `✦ MIDNIGHT ✦`).
+  - `emerald`: Vibrant forest & mint green aesthetic with nature motifs (`🍃`, `◈ EMERALD ◈`).
+  - `gold`: Luxurious golden & amber styling with royal crown detailing (`👑`, `★ GOLD RESERVE ★`).
+  - `retro`: Nostalgic 80s arcade amber/terminal theme with pixel borders (`👾`, `:: RETRO ARCADE ::`).
+  - `frost`: Crisp arctic blue & icy cyan styling with snowflake motifs (`❄️`, `❄ FROST PROTOCOL ❄`).
+- **Dynamic Bar Styles**: 4 distinct Unicode progress bar styles with percentage boundary clamping (0–100%), length customization (4–50 characters), and theme defaults:
+  - `pipes`: `▰▰▰▰▰▰▱▱▱▱` (high-tech cyber bar)
+  - `blocks`: `██████░░░░` (solid block meter)
+  - `squares`: `■■■■■■□□□□` (clean geometric squares)
+  - `retro`: `▓▓▓▓▓▓░░░░` (shaded retro terminal CRT meter)
+- **User Profile Style Model (`UserProfileStyle`)**: Mongoose schema and caching service persisting per-user customization for rank card theme, balance theme, bar style, and achievement badge visibility, with automated fallback to server-wide defaults configured in `GuildConfig`.
+- **Interactive `/customize` Slash Command**:
+  - `/customize profile`: View and configure personal theme, balance theme, and bar style preferences with dynamic autocomplete.
+  - `/customize preview`: Interactive preview featuring theme hex accents, decorative headers, and sample progress bars. Includes a live button-switcher (`prev`, `next`, direct theme buttons, `set_rank`, `set_bal`) allowing users to cycle through themes and apply them directly to their rank card or balance screen with one click.
+  - `/customize server-theme`: Server-wide default theme configuration with `MANAGE_GUILD` permission enforcement.
+
+### Phase 2: Enhanced Custom Screens for Levels & Economy
+- **Themed `/rank` Player Cards**:
+  - Dynamically styled rank cards honoring the user's selected rank theme (or server default).
+  - Customized progress bar rendering using the user's preferred bar style (`pipes`, `blocks`, `squares`, `retro`).
+  - Visual achievement milestone badges dynamically unlocked by level tier (Novice, Apprentice, Expert, Master, Legend).
+  - Styled statistics layout displaying level, server rank position, current XP, and next level threshold.
+- **Olympic Podium `/leaderboard` & Themed Level-Up Embeds**:
+  - Server XP leaderboard enhanced with Olympic podium styling:
+    - 🥇 **1st Place**: Gold podium medal and prominent highlight.
+    - 🥈 **2nd Place**: Silver podium medal.
+    - 🥉 **3rd Place**: Bronze podium medal.
+    - Numeric rank badges (`#4`, `#5`, ...) for subsequent placements.
+  - Server-configured theme borders and accent colors across leaderboard embeds.
+  - Themed level-up announcement embeds decorated with theme headers and celebratory borders.
+- **ATM Terminal `/balance` Card Layout**:
+  - Complete visual overhaul of the `/balance` card into an authentic ATM terminal screen.
+  - Official bank header (`AiCord National Reserve // Secure ATM Terminal`) with cardholder identification and account status.
+  - Dynamic wealth tier classification based on net worth:
+    - 🥉 **Bronze**: Net worth < 10,000 coins
+    - 🥈 **Silver**: Net worth 10,000 – 49,999 coins
+    - 🥇 **Gold**: Net worth 50,000 – 199,999 coins
+    - 💎 **Diamond**: Net worth 200,000+ coins
+  - Visual ASCII bank capacity utilization meter (`[████████░░] 80% Full`) displaying real-time bank usage against maximum capacity.
+  - Structured financial breakdown separating wallet cash, deposited funds, net worth, and total capacity.
+- **Themed Economy Displays (`/daily`, `/shop`, `/rich`)**:
+  - `/daily`: ATM deposit receipt embed with streak multiplier tracking, daily bonus payout, and updated bank balance.
+  - `/shop`: Server-themed shopping catalog embed displaying item IDs, icons, prices, stock levels, and automated Discord role rewards.
+  - `/rich`: Server wealth leaderboard featuring Olympic podium medals (🥇, 🥈, 🥉) and wealth tier badges (Bronze, Silver, Gold, Diamond) across all ranked members.
 
 ## Infrastructure & Serverless Stability Notes
 
