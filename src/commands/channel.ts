@@ -40,6 +40,9 @@ export async function handleChannelCommand(
     case 'create':
       await handleChannelCreate(token, guildId, subOptions);
       break;
+    case 'edit':
+      await handleChannelEdit(token, guildId, subOptions, currentChannelId);
+      break;
     case 'delete':
       await handleChannelDelete(token, guildId, subOptions, currentChannelId);
       break;
@@ -106,6 +109,78 @@ async function handleChannelCreate(
     console.error('[/channel create] Error:', err);
     await editInteractionResponse(token, {
       embeds: [errorEmbed('Failed to Create Channel', 'Could not create the channel. Check my permissions.')],
+    });
+  }
+}
+
+async function handleChannelEdit(
+  token: string,
+  guildId: string,
+  options: Array<{ name: string; value: unknown }>,
+  currentChannelId: string,
+): Promise<void> {
+  const channelId = getOption<string>(options, 'channel') ?? currentChannelId;
+  if (!channelId) {
+    await editInteractionResponse(token, {
+      embeds: [errorEmbed('Missing Channel', 'Please specify a channel to edit.')],
+      ephemeral: true,
+    });
+    return;
+  }
+
+  const name = getOption<string>(options, 'name');
+  const topic = getOption<string>(options, 'topic');
+  const slowmode = getOption<number>(options, 'slowmode');
+  const nsfw = getOption<boolean>(options, 'nsfw');
+  const category = getOption<string>(options, 'category');
+
+  if (
+    name === undefined &&
+    topic === undefined &&
+    slowmode === undefined &&
+    nsfw === undefined &&
+    category === undefined
+  ) {
+    await editInteractionResponse(token, {
+      embeds: [
+        errorEmbed(
+          'Missing Options',
+          'Please specify at least one property to update (name, topic, slowmode, nsfw, or category).',
+        ),
+      ],
+      ephemeral: true,
+    });
+    return;
+  }
+
+  if (slowmode !== undefined && (slowmode < 0 || slowmode > 21600)) {
+    await editInteractionResponse(token, {
+      embeds: [
+        errorEmbed('Invalid Slowmode', 'Slowmode must be between 0 and 21600 seconds (6 hours).'),
+      ],
+      ephemeral: true,
+    });
+    return;
+  }
+
+  const body: Record<string, unknown> = {};
+  if (name !== undefined) body.name = sanitizeChannelName(name);
+  if (topic !== undefined) body.topic = topic;
+  if (slowmode !== undefined) body.rate_limit_per_user = slowmode;
+  if (nsfw !== undefined) body.nsfw = nsfw;
+  if (category !== undefined) body.parent_id = category;
+
+  try {
+    const rest = getDiscordRest();
+    await discordApiCall(() => rest.patch(Routes.channel(channelId), { body }));
+
+    await editInteractionResponse(token, {
+      embeds: [successEmbed('Channel Updated', `Successfully updated <#${channelId}>.`)],
+    });
+  } catch (err) {
+    console.error('[/channel edit] Error:', err);
+    await editInteractionResponse(token, {
+      embeds: [errorEmbed('Failed to Edit Channel', 'Could not update the channel. Check my permissions.')],
     });
   }
 }
@@ -245,6 +320,53 @@ export const channelCommand: RegisteredCommand = {
           name: 'private',
           description: 'Make channel private (visible only to specified roles)',
           type: ApplicationCommandOptionType.Boolean,
+          required: false,
+        },
+      ],
+    },
+    {
+      name: 'edit',
+      description: 'Edit channel settings',
+      type: ApplicationCommandOptionType.Subcommand,
+      options: [
+        {
+          name: 'channel',
+          description: 'The channel to edit',
+          type: ApplicationCommandOptionType.Channel,
+          required: true,
+        },
+        {
+          name: 'name',
+          description: 'New channel name',
+          type: ApplicationCommandOptionType.String,
+          required: false,
+          max_length: 100,
+        },
+        {
+          name: 'topic',
+          description: 'Channel topic',
+          type: ApplicationCommandOptionType.String,
+          required: false,
+          max_length: 1024,
+        },
+        {
+          name: 'slowmode',
+          description: 'Slowmode in seconds (0 to disable, max 21600)',
+          type: ApplicationCommandOptionType.Integer,
+          required: false,
+          min_value: 0,
+          max_value: 21600,
+        },
+        {
+          name: 'nsfw',
+          description: 'Mark channel as age-restricted (NSFW)',
+          type: ApplicationCommandOptionType.Boolean,
+          required: false,
+        },
+        {
+          name: 'category',
+          description: 'Move channel into a category',
+          type: ApplicationCommandOptionType.Channel,
           required: false,
         },
       ],

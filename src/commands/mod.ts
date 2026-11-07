@@ -1,6 +1,7 @@
 /**
  * src/commands/mod.ts
- * Handles /mod subcommands: ban, kick, timeout, warn, warnings, purge, case, modlog.
+ * Handles /mod subcommands: ban, kick, timeout, warn, warnings, purge, case, modlog,
+ * unban, untimeout, softban, clearwarnings.
  */
 
 import {
@@ -15,8 +16,11 @@ import { ModCase } from '@/models/ModCase';
 import { TempAction } from '@/models/TempAction';
 import { getDiscordRest, discordApiCall } from '@/lib/discord/rest';
 import type { RegisteredCommand } from '@/lib/discord/command-registry';
-import { PermissionFlags } from '@/lib/discord/permissions';
-import { editInteractionResponse } from '@/lib/discord/interaction-response';
+import { PermissionFlags, hasPermission } from '@/lib/discord/permissions';
+import {
+  editInteractionResponse,
+  resolveApplicationId,
+} from '@/lib/discord/interaction-response';
 import { successEmbed, errorEmbed, infoEmbed, clampEmbed, Colors } from '@/lib/discord/embeds';
 import {
   createModCase,
@@ -24,12 +28,151 @@ import {
   formatDuration,
 } from '@/lib/discord/mod-utils';
 import { validateBulkDeleteCount, BULK_DELETE_MAX_AGE_DAYS } from '@/lib/limits';
+import { PermissionEngine, type ActionType } from '@/lib/discord/permission-engine';
 
 function getOption<T = string>(
   options: Array<{ name: string; value: unknown }>,
   name: string,
 ): T | undefined {
   return options.find((o) => o.name === name)?.value as T | undefined;
+}
+
+/**
+ * Verify role hierarchy and permissions for moderation actions using PermissionEngine.canActOn.
+ */
+export async function verifyModerationHierarchy(
+  interaction: APIChatInputApplicationCommandInteraction,
+  guildId: string,
+  targetUserId: string,
+  action: ActionType,
+): Promise<{ allowed: boolean; message?: string; targetTag?: string }> {
+  const moderatorId = interaction.member?.user?.id ?? interaction.user?.id ?? '';
+  const botId = resolveApplicationId();
+
+  if (moderatorId && moderatorId === targetUserId) {
+    return {
+      allowed: false,
+      message: 'You cannot perform this moderation action on yourself.',
+    };
+  }
+
+  if (botId && botId === targetUserId) {
+    return {
+      allowed: false,
+      message: 'AiCord cannot perform this moderation action on itself.',
+    };
+  }
+
+  const rest = getDiscordRest();
+
+  // 1. Fetch guild info for owner_id
+  let guildOwnerId = '';
+  try {
+    const guild = (await discordApiCall(() =>
+      rest.get(Routes.guild(guildId)),
+    )) as { owner_id?: string };
+    guildOwnerId = guild.owner_id ?? '';
+  } catch {}
+
+  if (guildOwnerId && targetUserId === guildOwnerId) {
+    return {
+      allowed: false,
+      message: 'The server owner has immunity and cannot be moderated.',
+    };
+  }
+
+  // 2. Fetch guild roles
+  let roles: Array<{ id: string; position: number; tags?: { bot_id?: string } }> = [];
+  try {
+    roles = (await discordApiCall(() =>
+      rest.get(Routes.guildRoles(guildId)),
+    )) as Array<{ id: string; position: number; tags?: { bot_id?: string } }>;
+  } catch {}
+
+  // 3. Resolve target member info if in guild
+  let targetHighestPosition: number | undefined;
+  let targetTag: string | undefined;
+
+  try {
+    const member = (await discordApiCall(() =>
+      rest.get(Routes.guildMember(guildId, targetUserId)),
+    )) as {
+      roles?: string[];
+      user?: { username?: string; discriminator?: string };
+    };
+    if (member?.user) {
+      targetTag = `${member.user.username}#${member.user.discriminator ?? '0'}`;
+    }
+    if (member?.roles && roles.length > 0) {
+      targetHighestPosition = 0;
+      for (const rid of member.roles) {
+        const r = roles.find((x) => x.id === rid);
+        if (r && r.position > targetHighestPosition) {
+          targetHighestPosition = r.position;
+        }
+      }
+    }
+  } catch {
+    // Target might not be in the server (e.g. banning by user ID)
+  }
+
+  // 4. Resolve invoker highest role position
+  let invokerHighestPosition = 0;
+  const invokerRoles = (interaction.member?.roles ?? []) as string[];
+  if (roles.length > 0) {
+    for (const rid of invokerRoles) {
+      const r = roles.find((x) => x.id === rid);
+      if (r && r.position > invokerHighestPosition) {
+        invokerHighestPosition = r.position;
+      }
+    }
+  }
+
+  // 5. Resolve bot highest role position
+  let botHighestPosition = 0;
+  if (roles.length > 0) {
+    try {
+      const botMember = (await discordApiCall(() =>
+        rest.get(Routes.guildMember(guildId, botId)),
+      )) as { roles?: string[] };
+      if (botMember?.roles) {
+        for (const rid of botMember.roles) {
+          const r = roles.find((x) => x.id === rid);
+          if (r && r.position > botHighestPosition) {
+            botHighestPosition = r.position;
+          }
+        }
+      }
+    } catch {
+      const botRole = roles.find((r) => r.tags?.bot_id === botId);
+      botHighestPosition = botRole ? botRole.position : Math.max(0, ...roles.map((r) => r.position));
+    }
+  }
+
+  const check = PermissionEngine.canActOn({
+    guildOwnerId,
+    invoker: {
+      id: moderatorId,
+      highestRolePosition: invokerHighestPosition,
+      permissions: interaction.member?.permissions ?? '0',
+    },
+    target: {
+      id: targetUserId,
+      highestRolePosition: targetHighestPosition,
+    },
+    bot: {
+      id: botId,
+      highestRolePosition: botHighestPosition,
+      permissions: PermissionFlags.ADMINISTRATOR,
+    },
+    action,
+  });
+
+  if (!check.allowed) {
+    return { allowed: false, message: check.message, targetTag };
+  }
+
+  return { allowed: true, targetTag };
 }
 
 export async function handleModCommand(
@@ -48,16 +191,28 @@ export async function handleModCommand(
 
   switch (subcommand?.name) {
     case 'ban':
-      await handleBan(token, guildId, moderatorId, moderatorTag, subOptions);
+      await handleBan(token, guildId, moderatorId, moderatorTag, subOptions, interaction);
       break;
     case 'kick':
-      await handleKick(token, guildId, moderatorId, moderatorTag, subOptions);
+      await handleKick(token, guildId, moderatorId, moderatorTag, subOptions, interaction);
       break;
     case 'timeout':
-      await handleTimeout(token, guildId, moderatorId, moderatorTag, subOptions);
+      await handleTimeout(token, guildId, moderatorId, moderatorTag, subOptions, interaction);
+      break;
+    case 'softban':
+      await handleSoftban(token, guildId, moderatorId, moderatorTag, subOptions, interaction);
+      break;
+    case 'unban':
+      await handleUnban(token, guildId, moderatorId, moderatorTag, subOptions, interaction);
+      break;
+    case 'untimeout':
+      await handleUntimeout(token, guildId, moderatorId, moderatorTag, subOptions, interaction);
+      break;
+    case 'clearwarnings':
+      await handleClearWarnings(token, guildId, moderatorId, moderatorTag, subOptions, interaction);
       break;
     case 'warn':
-      await handleWarn(token, guildId, moderatorId, moderatorTag, subOptions);
+      await handleWarn(token, guildId, moderatorId, moderatorTag, subOptions, interaction);
       break;
     case 'warnings':
       await handleWarnings(token, guildId, subOptions);
@@ -79,12 +234,13 @@ export async function handleModCommand(
   }
 }
 
-async function handleBan(
+export async function handleBan(
   token: string,
   guildId: string,
   moderatorId: string,
   moderatorTag: string,
   options: Array<{ name: string; value: unknown }>,
+  interaction?: APIChatInputApplicationCommandInteraction,
 ): Promise<void> {
   const userId = getOption<string>(options, 'user');
   const reason = getOption<string>(options, 'reason') ?? 'No reason provided';
@@ -92,8 +248,23 @@ async function handleBan(
   const durationStr = getOption<string>(options, 'duration');
 
   if (!userId) {
-    await editInteractionResponse(token, { embeds: [errorEmbed('Missing User', 'Please specify a user to ban.')], ephemeral: true });
+    await editInteractionResponse(token, {
+      embeds: [errorEmbed('Missing User', 'Please specify a user to ban.')],
+      ephemeral: true,
+    });
     return;
+  }
+
+  // Hierarchy and permission check
+  if (interaction) {
+    const permCheck = await verifyModerationHierarchy(interaction, guildId, userId, 'ban');
+    if (!permCheck.allowed) {
+      await editInteractionResponse(token, {
+        embeds: [errorEmbed('Action Denied', permCheck.message!)],
+        ephemeral: true,
+      });
+      return;
+    }
   }
 
   let durationMs: number | undefined;
@@ -101,7 +272,10 @@ async function handleBan(
   if (durationStr) {
     const parsed = parseDuration(durationStr);
     if (!parsed) {
-      await editInteractionResponse(token, { embeds: [errorEmbed('Invalid Duration', 'Use format: 10m, 2h, 7d, 2w')], ephemeral: true });
+      await editInteractionResponse(token, {
+        embeds: [errorEmbed('Invalid Duration', 'Use format: 10m, 2h, 7d, 2w')],
+        ephemeral: true,
+      });
       return;
     }
     durationMs = parsed;
@@ -111,11 +285,13 @@ async function handleBan(
   try {
     const rest = getDiscordRest();
 
-    // Get user info first
-    const targetUser = await discordApiCall(() =>
-      rest.get(Routes.user(userId)) as Promise<{ username: string; discriminator: string }>,
-    );
-    const targetTag = `${targetUser.username}#${targetUser.discriminator}`;
+    let targetTag = `User (${userId})`;
+    try {
+      const targetUser = (await discordApiCall(() =>
+        rest.get(Routes.user(userId)),
+      )) as { username: string; discriminator: string };
+      targetTag = `${targetUser.username}#${targetUser.discriminator ?? '0'}`;
+    } catch {}
 
     await discordApiCall(() =>
       rest.put(Routes.guildBan(guildId, userId), {
@@ -128,7 +304,7 @@ async function handleBan(
 
     const caseNumber = await createModCase({
       guildId,
-      action: durationMs ? 'ban' : 'ban',
+      action: 'ban',
       targetId: userId,
       targetTag,
       moderatorId,
@@ -152,10 +328,12 @@ async function handleBan(
 
     const durationText = durationMs ? ` for ${formatDuration(durationMs)}` : ' permanently';
     await editInteractionResponse(token, {
-      embeds: [successEmbed(
-        `User Banned`,
-        `**${targetTag}** has been banned${durationText}.\n**Reason:** ${reason}\n**Case:** #${caseNumber}`,
-      )],
+      embeds: [
+        successEmbed(
+          'User Banned',
+          `**${targetTag}** has been banned${durationText}.\n**Reason:** ${reason}\n**Case:** #${caseNumber}`,
+        ),
+      ],
     });
   } catch (err) {
     console.error('[/mod ban] Error:', err);
@@ -165,27 +343,46 @@ async function handleBan(
   }
 }
 
-async function handleKick(
+export async function handleKick(
   token: string,
   guildId: string,
   moderatorId: string,
   moderatorTag: string,
   options: Array<{ name: string; value: unknown }>,
+  interaction?: APIChatInputApplicationCommandInteraction,
 ): Promise<void> {
   const userId = getOption<string>(options, 'user');
   const reason = getOption<string>(options, 'reason') ?? 'No reason provided';
 
   if (!userId) {
-    await editInteractionResponse(token, { embeds: [errorEmbed('Missing User', 'Please specify a user to kick.')], ephemeral: true });
+    await editInteractionResponse(token, {
+      embeds: [errorEmbed('Missing User', 'Please specify a user to kick.')],
+      ephemeral: true,
+    });
     return;
+  }
+
+  // Hierarchy and permission check
+  if (interaction) {
+    const permCheck = await verifyModerationHierarchy(interaction, guildId, userId, 'kick');
+    if (!permCheck.allowed) {
+      await editInteractionResponse(token, {
+        embeds: [errorEmbed('Action Denied', permCheck.message!)],
+        ephemeral: true,
+      });
+      return;
+    }
   }
 
   try {
     const rest = getDiscordRest();
-    const targetUser = await discordApiCall(() =>
-      rest.get(Routes.user(userId)) as Promise<{ username: string; discriminator: string }>,
-    );
-    const targetTag = `${targetUser.username}#${targetUser.discriminator}`;
+    let targetTag = `User (${userId})`;
+    try {
+      const targetUser = (await discordApiCall(() =>
+        rest.get(Routes.user(userId)),
+      )) as { username: string; discriminator: string };
+      targetTag = `${targetUser.username}#${targetUser.discriminator ?? '0'}`;
+    } catch {}
 
     await discordApiCall(() =>
       rest.delete(Routes.guildMember(guildId, userId), {
@@ -204,7 +401,12 @@ async function handleKick(
     });
 
     await editInteractionResponse(token, {
-      embeds: [successEmbed('User Kicked', `**${targetTag}** has been kicked.\n**Reason:** ${reason}\n**Case:** #${caseNumber}`)],
+      embeds: [
+        successEmbed(
+          'User Kicked',
+          `**${targetTag}** has been kicked.\n**Reason:** ${reason}\n**Case:** #${caseNumber}`,
+        ),
+      ],
     });
   } catch (err) {
     console.error('[/mod kick] Error:', err);
@@ -214,40 +416,66 @@ async function handleKick(
   }
 }
 
-async function handleTimeout(
+export async function handleTimeout(
   token: string,
   guildId: string,
   moderatorId: string,
   moderatorTag: string,
   options: Array<{ name: string; value: unknown }>,
+  interaction?: APIChatInputApplicationCommandInteraction,
 ): Promise<void> {
   const userId = getOption<string>(options, 'user');
   const durationStr = getOption<string>(options, 'duration') ?? '';
   const reason = getOption<string>(options, 'reason') ?? 'No reason provided';
 
   if (!userId) {
-    await editInteractionResponse(token, { embeds: [errorEmbed('Missing User', 'Please specify a user to timeout.')], ephemeral: true });
+    await editInteractionResponse(token, {
+      embeds: [errorEmbed('Missing User', 'Please specify a user to timeout.')],
+      ephemeral: true,
+    });
     return;
   }
 
   const durationMs = parseDuration(durationStr);
   if (!durationMs) {
-    await editInteractionResponse(token, { embeds: [errorEmbed('Invalid Duration', 'Use format: 10m, 2h, 7d (max 28d)')], ephemeral: true });
+    await editInteractionResponse(token, {
+      embeds: [errorEmbed('Invalid Duration', 'Use format: 10m, 2h, 7d (max 28d)')],
+      ephemeral: true,
+    });
     return;
   }
 
   const MAX_TIMEOUT_MS = 28 * 24 * 60 * 60 * 1000;
   if (durationMs > MAX_TIMEOUT_MS) {
-    await editInteractionResponse(token, { embeds: [errorEmbed('Duration Too Long', 'Timeout cannot exceed 28 days.')], ephemeral: true });
+    await editInteractionResponse(token, {
+      embeds: [errorEmbed('Duration Too Long', 'Timeout cannot exceed 28 days.')],
+      ephemeral: true,
+    });
     return;
+  }
+
+  // Hierarchy and permission check
+  if (interaction) {
+    const permCheck = await verifyModerationHierarchy(interaction, guildId, userId, 'timeout');
+    if (!permCheck.allowed) {
+      await editInteractionResponse(token, {
+        embeds: [errorEmbed('Action Denied', permCheck.message!)],
+        ephemeral: true,
+      });
+      return;
+    }
   }
 
   try {
     const rest = getDiscordRest();
-    const targetUser = await discordApiCall(() =>
-      rest.get(Routes.user(userId)) as Promise<{ username: string; discriminator: string }>,
-    );
-    const targetTag = `${targetUser.username}#${targetUser.discriminator}`;
+    let targetTag = `User (${userId})`;
+    try {
+      const targetUser = (await discordApiCall(() =>
+        rest.get(Routes.user(userId)),
+      )) as { username: string; discriminator: string };
+      targetTag = `${targetUser.username}#${targetUser.discriminator ?? '0'}`;
+    } catch {}
+
     const expiresAt = new Date(Date.now() + durationMs);
 
     await discordApiCall(() =>
@@ -270,10 +498,12 @@ async function handleTimeout(
     });
 
     await editInteractionResponse(token, {
-      embeds: [successEmbed(
-        'User Timed Out',
-        `**${targetTag}** has been timed out for **${formatDuration(durationMs)}**.\n**Reason:** ${reason}\n**Case:** #${caseNumber}`,
-      )],
+      embeds: [
+        successEmbed(
+          'User Timed Out',
+          `**${targetTag}** has been timed out for **${formatDuration(durationMs)}**.\n**Reason:** ${reason}\n**Case:** #${caseNumber}`,
+        ),
+      ],
     });
   } catch (err) {
     console.error('[/mod timeout] Error:', err);
@@ -283,27 +513,358 @@ async function handleTimeout(
   }
 }
 
-async function handleWarn(
+export async function handleSoftban(
   token: string,
   guildId: string,
   moderatorId: string,
   moderatorTag: string,
   options: Array<{ name: string; value: unknown }>,
+  interaction?: APIChatInputApplicationCommandInteraction,
+): Promise<void> {
+  const userId = getOption<string>(options, 'user');
+  const reason = getOption<string>(options, 'reason') ?? 'No reason provided';
+  const deleteDays = getOption<number>(options, 'delete_days') ?? 1;
+
+  if (!userId) {
+    await editInteractionResponse(token, {
+      embeds: [errorEmbed('Missing User', 'Please specify a user to softban.')],
+      ephemeral: true,
+    });
+    return;
+  }
+
+  if (deleteDays < 1 || deleteDays > 7) {
+    await editInteractionResponse(token, {
+      embeds: [errorEmbed('Invalid Delete Days', 'Delete days must be between 1 and 7.')],
+      ephemeral: true,
+    });
+    return;
+  }
+
+  // Hierarchy and permission check
+  if (interaction) {
+    const permCheck = await verifyModerationHierarchy(interaction, guildId, userId, 'softban');
+    if (!permCheck.allowed) {
+      await editInteractionResponse(token, {
+        embeds: [errorEmbed('Action Denied', permCheck.message!)],
+        ephemeral: true,
+      });
+      return;
+    }
+  }
+
+  try {
+    const rest = getDiscordRest();
+    let targetTag = `User (${userId})`;
+    try {
+      const targetUser = (await discordApiCall(() =>
+        rest.get(Routes.user(userId)),
+      )) as { username: string; discriminator: string };
+      targetTag = `${targetUser.username}#${targetUser.discriminator ?? '0'}`;
+    } catch {}
+
+    // 1. Ban target to delete messages
+    await discordApiCall(() =>
+      rest.put(Routes.guildBan(guildId, userId), {
+        body: {
+          delete_message_seconds: deleteDays * 86400,
+          reason: `[Softban] ${reason} | Moderator: ${moderatorTag}`,
+        },
+      }),
+    );
+
+    // 2. Immediately unban
+    await discordApiCall(() => rest.delete(Routes.guildBan(guildId, userId)));
+
+    const caseNumber = await createModCase({
+      guildId,
+      action: 'softban',
+      targetId: userId,
+      targetTag,
+      moderatorId,
+      moderatorTag,
+      reason,
+    });
+
+    await editInteractionResponse(token, {
+      embeds: [
+        successEmbed(
+          'User Softbanned',
+          `**${targetTag}** has been softbanned (messages deleted for ${deleteDays} day(s)).\n**Reason:** ${reason}\n**Case:** #${caseNumber}`,
+        ),
+      ],
+    });
+  } catch (err) {
+    console.error('[/mod softban] Error:', err);
+    await editInteractionResponse(token, {
+      embeds: [errorEmbed('Softban Failed', 'Could not softban the user. Check permissions and role hierarchy.')],
+    });
+  }
+}
+
+export async function handleUnban(
+  token: string,
+  guildId: string,
+  moderatorId: string,
+  moderatorTag: string,
+  options: Array<{ name: string; value: unknown }>,
+  interaction?: APIChatInputApplicationCommandInteraction,
+): Promise<void> {
+  const userId = getOption<string>(options, 'user_id') ?? getOption<string>(options, 'user');
+  const reason = getOption<string>(options, 'reason') ?? 'No reason provided';
+
+  if (!userId) {
+    await editInteractionResponse(token, {
+      embeds: [errorEmbed('Missing User ID', 'Please provide the user ID to unban.')],
+      ephemeral: true,
+    });
+    return;
+  }
+
+  if (interaction?.member?.permissions) {
+    if (!hasPermission(interaction.member.permissions, PermissionFlags.BAN_MEMBERS)) {
+      await editInteractionResponse(token, {
+        embeds: [
+          errorEmbed(
+            'Missing Permission',
+            'You need the **Ban Members** (`BAN_MEMBERS`) permission to unban members.',
+          ),
+        ],
+        ephemeral: true,
+      });
+      return;
+    }
+  }
+
+  try {
+    const rest = getDiscordRest();
+
+    await discordApiCall(() => rest.delete(Routes.guildBan(guildId, userId)));
+
+    let targetTag = `User (${userId})`;
+    try {
+      const u = (await discordApiCall(() =>
+        rest.get(Routes.user(userId)),
+      )) as { username: string; discriminator: string };
+      targetTag = `${u.username}#${u.discriminator ?? '0'}`;
+    } catch {}
+
+    const caseNumber = await createModCase({
+      guildId,
+      action: 'unban',
+      targetId: userId,
+      targetTag,
+      moderatorId,
+      moderatorTag,
+      reason,
+    });
+
+    // Update any active temp actions for this user
+    await TempAction.updateMany(
+      { guildId, userId, processed: false, type: 'temp_ban' },
+      { $set: { processed: true } },
+    );
+
+    await editInteractionResponse(token, {
+      embeds: [
+        successEmbed(
+          'User Unbanned',
+          `Successfully unbanned <@${userId}>.\n**Reason:** ${reason}\n**Case:** #${caseNumber}`,
+        ),
+      ],
+    });
+  } catch (err) {
+    console.error('[/mod unban] Error:', err);
+    await editInteractionResponse(token, {
+      embeds: [errorEmbed('Unban Failed', 'Could not unban the user. Make sure the user is banned and I have Ban Members permission.')],
+    });
+  }
+}
+
+export async function handleUntimeout(
+  token: string,
+  guildId: string,
+  moderatorId: string,
+  moderatorTag: string,
+  options: Array<{ name: string; value: unknown }>,
+  interaction?: APIChatInputApplicationCommandInteraction,
+): Promise<void> {
+  const userId = getOption<string>(options, 'user');
+  const reason = getOption<string>(options, 'reason') ?? 'No reason provided';
+
+  if (!userId) {
+    await editInteractionResponse(token, {
+      embeds: [errorEmbed('Missing User', 'Please specify a user to untimeout.')],
+      ephemeral: true,
+    });
+    return;
+  }
+
+  if (interaction?.member?.permissions) {
+    if (!hasPermission(interaction.member.permissions, PermissionFlags.MODERATE_MEMBERS)) {
+      await editInteractionResponse(token, {
+        embeds: [
+          errorEmbed(
+            'Missing Permission',
+            'You need the **Moderate Members** (`MODERATE_MEMBERS`) permission to remove timeouts.',
+          ),
+        ],
+        ephemeral: true,
+      });
+      return;
+    }
+  }
+
+  try {
+    const rest = getDiscordRest();
+
+    await discordApiCall(() =>
+      rest.patch(Routes.guildMember(guildId, userId), {
+        body: { communication_disabled_until: null },
+        reason: `[Untimeout] ${reason} | Moderator: ${moderatorTag}`,
+      }),
+    );
+
+    let targetTag = `User (${userId})`;
+    try {
+      const u = (await discordApiCall(() =>
+        rest.get(Routes.user(userId)),
+      )) as { username: string; discriminator: string };
+      targetTag = `${u.username}#${u.discriminator ?? '0'}`;
+    } catch {}
+
+    const caseNumber = await createModCase({
+      guildId,
+      action: 'untimeout',
+      targetId: userId,
+      targetTag,
+      moderatorId,
+      moderatorTag,
+      reason,
+    });
+
+    // Update active temp timeouts
+    await TempAction.updateMany(
+      { guildId, userId, processed: false, type: 'temp_timeout' },
+      { $set: { processed: true } },
+    );
+
+    await editInteractionResponse(token, {
+      embeds: [
+        successEmbed(
+          'Timeout Removed',
+          `Removed timeout for **${targetTag}** (<@${userId}>).\n**Reason:** ${reason}\n**Case:** #${caseNumber}`,
+        ),
+      ],
+    });
+  } catch (err) {
+    console.error('[/mod untimeout] Error:', err);
+    await editInteractionResponse(token, {
+      embeds: [errorEmbed('Untimeout Failed', 'Could not remove timeout. Check my permissions.')],
+    });
+  }
+}
+
+export async function handleClearWarnings(
+  token: string,
+  guildId: string,
+  moderatorId: string,
+  moderatorTag: string,
+  options: Array<{ name: string; value: unknown }>,
+  interaction?: APIChatInputApplicationCommandInteraction,
+): Promise<void> {
+  const userId = getOption<string>(options, 'user');
+  const reason = getOption<string>(options, 'reason');
+
+  if (!userId) {
+    await editInteractionResponse(token, {
+      embeds: [errorEmbed('Missing User', 'Please specify a user to clear warnings for.')],
+      ephemeral: true,
+    });
+    return;
+  }
+
+  if (interaction?.member?.permissions) {
+    if (
+      !hasPermission(interaction.member.permissions, PermissionFlags.MODERATE_MEMBERS) &&
+      !hasPermission(interaction.member.permissions, PermissionFlags.KICK_MEMBERS)
+    ) {
+      await editInteractionResponse(token, {
+        embeds: [
+          errorEmbed(
+            'Missing Permission',
+            'You need moderation permissions to clear user warnings.',
+          ),
+        ],
+        ephemeral: true,
+      });
+      return;
+    }
+  }
+
+  try {
+    const result = await Warning.updateMany(
+      { guildId, userId, active: true },
+      { $set: { active: false } },
+    );
+
+    const count = result.modifiedCount ?? 0;
+
+    await editInteractionResponse(token, {
+      embeds: [
+        successEmbed(
+          'Warnings Cleared',
+          `Cleared **${count}** active warning(s) for <@${userId}>.${reason ? `\n**Reason:** ${reason}` : ''}`,
+        ),
+      ],
+    });
+  } catch (err) {
+    console.error('[/mod clearwarnings] Error:', err);
+    await editInteractionResponse(token, {
+      embeds: [errorEmbed('Failed to Clear Warnings', 'An error occurred while clearing warnings.')],
+    });
+  }
+}
+
+export async function handleWarn(
+  token: string,
+  guildId: string,
+  moderatorId: string,
+  moderatorTag: string,
+  options: Array<{ name: string; value: unknown }>,
+  interaction?: APIChatInputApplicationCommandInteraction,
 ): Promise<void> {
   const userId = getOption<string>(options, 'user');
   const reason = getOption<string>(options, 'reason');
 
   if (!userId || !reason) {
-    await editInteractionResponse(token, { embeds: [errorEmbed('Missing Arguments', 'Please provide a user and reason.')], ephemeral: true });
+    await editInteractionResponse(token, {
+      embeds: [errorEmbed('Missing Arguments', 'Please provide a user and reason.')],
+      ephemeral: true,
+    });
     return;
+  }
+
+  if (interaction) {
+    const permCheck = await verifyModerationHierarchy(interaction, guildId, userId, 'warn');
+    if (!permCheck.allowed) {
+      await editInteractionResponse(token, {
+        embeds: [errorEmbed('Action Denied', permCheck.message!)],
+        ephemeral: true,
+      });
+      return;
+    }
   }
 
   try {
     const rest = getDiscordRest();
-    const targetUser = await discordApiCall(() =>
-      rest.get(Routes.user(userId)) as Promise<{ username: string; discriminator: string }>,
-    );
-    const targetTag = `${targetUser.username}#${targetUser.discriminator}`;
+    let targetTag = `User (${userId})`;
+    try {
+      const targetUser = (await discordApiCall(() =>
+        rest.get(Routes.user(userId)),
+      )) as { username: string; discriminator: string };
+      targetTag = `${targetUser.username}#${targetUser.discriminator ?? '0'}`;
+    } catch {}
 
     const caseNumber = await createModCase({
       guildId,
@@ -319,10 +880,12 @@ async function handleWarn(
     const warnCount = await Warning.countDocuments({ guildId, userId, active: true });
 
     await editInteractionResponse(token, {
-      embeds: [successEmbed(
-        'User Warned',
-        `**${targetTag}** has been warned.\n**Reason:** ${reason}\n**Case:** #${caseNumber}\n**Total active warnings:** ${warnCount}`,
-      )],
+      embeds: [
+        successEmbed(
+          'User Warned',
+          `**${targetTag}** has been warned.\n**Reason:** ${reason}\n**Case:** #${caseNumber}\n**Total active warnings:** ${warnCount}`,
+        ),
+      ],
     });
   } catch (err) {
     console.error('[/mod warn] Error:', err);
@@ -332,18 +895,23 @@ async function handleWarn(
   }
 }
 
-async function handleWarnings(
+export async function handleWarnings(
   token: string,
   guildId: string,
   options: Array<{ name: string; value: unknown }>,
 ): Promise<void> {
   const userId = getOption<string>(options, 'user');
   if (!userId) {
-    await editInteractionResponse(token, { embeds: [errorEmbed('Missing User', 'Please specify a user.')], ephemeral: true });
+    await editInteractionResponse(token, {
+      embeds: [errorEmbed('Missing User', 'Please specify a user.')],
+      ephemeral: true,
+    });
     return;
   }
 
-  const warnings = await Warning.find({ guildId, userId, active: true }).sort({ createdAt: -1 }).limit(10);
+  const warnings = await Warning.find({ guildId, userId, active: true })
+    .sort({ createdAt: -1 })
+    .limit(10);
 
   if (warnings.length === 0) {
     await editInteractionResponse(token, {
@@ -358,16 +926,18 @@ async function handleWarnings(
   }));
 
   await editInteractionResponse(token, {
-    embeds: [clampEmbed({
-      color: Colors.WARNING,
-      title: `⚠️ Warnings for <@${userId}>`,
-      description: `${warnings.length} active warning(s)`,
-      fields,
-    })],
+    embeds: [
+      clampEmbed({
+        color: Colors.WARNING,
+        title: `⚠️ Warnings for <@${userId}>`,
+        description: `${warnings.length} active warning(s)`,
+        fields,
+      }),
+    ],
   });
 }
 
-async function handlePurge(
+export async function handlePurge(
   token: string,
   guildId: string,
   channelId: string,
@@ -379,7 +949,10 @@ async function handlePurge(
   try {
     validateBulkDeleteCount(amount);
   } catch (err) {
-    await editInteractionResponse(token, { embeds: [errorEmbed('Invalid Amount', String(err))], ephemeral: true });
+    await editInteractionResponse(token, {
+      embeds: [errorEmbed('Invalid Amount', String(err))],
+      ephemeral: true,
+    });
     return;
   }
 
@@ -387,13 +960,13 @@ async function handlePurge(
     const rest = getDiscordRest();
 
     // Fetch messages
-    const messages = await discordApiCall(() =>
+    const messages = (await discordApiCall(() =>
       rest.get(Routes.channelMessages(channelId), {
         query: new URLSearchParams({ limit: '100' }),
-      }) as Promise<Array<{ id: string; author: { id: string }; timestamp: string }>>,
-    );
+      }),
+    )) as Array<{ id: string; author: { id: string }; timestamp: string }>;
 
-    const cutoff = Date.now() - (BULK_DELETE_MAX_AGE_DAYS * 24 * 60 * 60 * 1000);
+    const cutoff = Date.now() - BULK_DELETE_MAX_AGE_DAYS * 24 * 60 * 60 * 1000;
     const eligible = messages
       .filter((m) => new Date(m.timestamp).getTime() > cutoff)
       .filter((m) => !targetUserId || m.author.id === targetUserId)
@@ -402,7 +975,12 @@ async function handlePurge(
 
     if (eligible.length < 2) {
       await editInteractionResponse(token, {
-        embeds: [errorEmbed('Nothing to Delete', 'No eligible messages found (messages must be under 14 days old).')],
+        embeds: [
+          errorEmbed(
+            'Nothing to Delete',
+            'No eligible messages found (messages must be under 14 days old).',
+          ),
+        ],
         ephemeral: true,
       });
       return;
@@ -415,15 +993,13 @@ async function handlePurge(
     );
 
     await editInteractionResponse(token, {
-      embeds: [successEmbed('Messages Purged', `Deleted **${eligible.length}** message(s) from <#${channelId}>.`)],
+      embeds: [
+        successEmbed(
+          'Messages Purged',
+          `Deleted **${eligible.length}** message(s) from <#${channelId}>.`,
+        ),
+      ],
     });
-
-    // Auto-delete the success message after 5s to keep the channel clean
-    setTimeout(async () => {
-      try {
-        // Can't delete the edit, but can follow up with no content
-      } catch {}
-    }, 5000);
   } catch (err) {
     console.error('[/mod purge] Error:', err);
     await editInteractionResponse(token, {
@@ -432,14 +1008,17 @@ async function handlePurge(
   }
 }
 
-async function handleCase(
+export async function handleCase(
   token: string,
   guildId: string,
   options: Array<{ name: string; value: unknown }>,
 ): Promise<void> {
   const caseNumber = getOption<number>(options, 'number');
   if (!caseNumber) {
-    await editInteractionResponse(token, { embeds: [errorEmbed('Missing Case Number', 'Please provide a case number.')], ephemeral: true });
+    await editInteractionResponse(token, {
+      embeds: [errorEmbed('Missing Case Number', 'Please provide a case number.')],
+      ephemeral: true,
+    });
     return;
   }
 
@@ -453,33 +1032,43 @@ async function handleCase(
   }
 
   const ACTION_EMOJI: Record<string, string> = {
-    ban: '🔨', kick: '👢', timeout: '⏱️', warn: '⚠️',
-    softban: '🔇', unban: '✅', untimeout: '✅',
+    ban: '🔨',
+    kick: '👢',
+    timeout: '⏱️',
+    warn: '⚠️',
+    softban: '🔇',
+    unban: '✅',
+    untimeout: '✅',
   };
 
   await editInteractionResponse(token, {
-    embeds: [clampEmbed({
-      color: Colors.INFO,
-      title: `${ACTION_EMOJI[modCase.action] ?? '📋'} Case #${caseNumber} — ${modCase.action.toUpperCase()}`,
-      fields: [
-        { name: 'Target', value: `<@${modCase.targetId}> (${modCase.targetTag})`, inline: true },
-        { name: 'Moderator', value: `<@${modCase.moderatorId}> (${modCase.moderatorTag})`, inline: true },
-        { name: 'Reason', value: modCase.reason },
-        { name: 'Date', value: `<t:${Math.floor(modCase.createdAt.getTime() / 1000)}:F>`, inline: true },
-        ...(modCase.duration ? [{ name: 'Duration', value: formatDuration(modCase.duration), inline: true }] : []),
-      ],
-    })],
+    embeds: [
+      clampEmbed({
+        color: Colors.INFO,
+        title: `${ACTION_EMOJI[modCase.action] ?? '📋'} Case #${caseNumber} — ${modCase.action.toUpperCase()}`,
+        fields: [
+          { name: 'Target', value: `<@${modCase.targetId}> (${modCase.targetTag})`, inline: true },
+          { name: 'Moderator', value: `<@${modCase.moderatorId}> (${modCase.moderatorTag})`, inline: true },
+          { name: 'Reason', value: modCase.reason },
+          { name: 'Date', value: `<t:${Math.floor(modCase.createdAt.getTime() / 1000)}:F>`, inline: true },
+          ...(modCase.duration ? [{ name: 'Duration', value: formatDuration(modCase.duration), inline: true }] : []),
+        ],
+      }),
+    ],
   });
 }
 
-async function handleModlogSetup(
+export async function handleModlogSetup(
   token: string,
   guildId: string,
   options: Array<{ name: string; value: unknown }>,
 ): Promise<void> {
   const channelId = getOption<string>(options, 'channel');
   if (!channelId) {
-    await editInteractionResponse(token, { embeds: [errorEmbed('Missing Channel', 'Please select a channel.')], ephemeral: true });
+    await editInteractionResponse(token, {
+      embeds: [errorEmbed('Missing Channel', 'Please select a channel.')],
+      ephemeral: true,
+    });
     return;
   }
 
@@ -583,6 +1172,74 @@ export const modCommand: RegisteredCommand = {
       ],
     },
     {
+      name: 'softban',
+      description: 'Ban and immediately unban a member to purge messages',
+      type: ApplicationCommandOptionType.Subcommand,
+      options: [
+        {
+          name: 'user',
+          description: 'The member to softban',
+          type: ApplicationCommandOptionType.User,
+          required: true,
+        },
+        {
+          name: 'reason',
+          description: 'Reason for the softban',
+          type: ApplicationCommandOptionType.String,
+          required: false,
+          max_length: 500,
+        },
+        {
+          name: 'delete_days',
+          description: 'Days of messages to delete (1-7, default 1)',
+          type: ApplicationCommandOptionType.Integer,
+          required: false,
+          min_value: 1,
+          max_value: 7,
+        },
+      ],
+    },
+    {
+      name: 'unban',
+      description: 'Unban a user from the server',
+      type: ApplicationCommandOptionType.Subcommand,
+      options: [
+        {
+          name: 'user_id',
+          description: 'The user ID to unban',
+          type: ApplicationCommandOptionType.String,
+          required: true,
+        },
+        {
+          name: 'reason',
+          description: 'Reason for unbanning',
+          type: ApplicationCommandOptionType.String,
+          required: false,
+          max_length: 500,
+        },
+      ],
+    },
+    {
+      name: 'untimeout',
+      description: 'Remove timeout from a member',
+      type: ApplicationCommandOptionType.Subcommand,
+      options: [
+        {
+          name: 'user',
+          description: 'The member to remove timeout from',
+          type: ApplicationCommandOptionType.User,
+          required: true,
+        },
+        {
+          name: 'reason',
+          description: 'Reason for removing timeout',
+          type: ApplicationCommandOptionType.String,
+          required: false,
+          max_length: 500,
+        },
+      ],
+    },
+    {
       name: 'warn',
       description: 'Warn a member',
       type: ApplicationCommandOptionType.Subcommand,
@@ -598,6 +1255,26 @@ export const modCommand: RegisteredCommand = {
           description: 'Reason for the warning',
           type: ApplicationCommandOptionType.String,
           required: true,
+          max_length: 500,
+        },
+      ],
+    },
+    {
+      name: 'clearwarnings',
+      description: 'Clear all active warnings for a member',
+      type: ApplicationCommandOptionType.Subcommand,
+      options: [
+        {
+          name: 'user',
+          description: 'The member whose warnings will be cleared',
+          type: ApplicationCommandOptionType.User,
+          required: true,
+        },
+        {
+          name: 'reason',
+          description: 'Reason for clearing warnings',
+          type: ApplicationCommandOptionType.String,
+          required: false,
           max_length: 500,
         },
       ],

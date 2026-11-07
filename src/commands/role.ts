@@ -17,9 +17,11 @@ import {
   editInteractionResponse,
   buildButton,
   buildActionRow,
+  resolveApplicationId,
 } from '@/lib/discord/interaction-response';
 import { successEmbed, errorEmbed, infoEmbed, clampEmbed, Colors } from '@/lib/discord/embeds';
 import { sanitizeRoleName } from '@/lib/limits';
+import { PermissionEngine } from '@/lib/discord/permission-engine';
 
 function getOption<T = string>(
   options: Array<{ name: string; value: unknown }>,
@@ -44,6 +46,9 @@ export async function handleRoleCommand(
   switch (subcommand?.name) {
     case 'create':
       await handleRoleCreate(token, guildId, subOptions);
+      break;
+    case 'edit':
+      await handleRoleEdit(token, guildId, subOptions, interaction);
       break;
     case 'delete':
       await handleRoleDelete(token, guildId, subOptions);
@@ -110,6 +115,155 @@ async function handleRoleCreate(
     console.error('[/role create] Error:', err);
     await editInteractionResponse(token, {
       embeds: [errorEmbed('Failed to Create Role', 'Could not create the role. Check my permissions.')],
+    });
+  }
+}
+
+async function handleRoleEdit(
+  token: string,
+  guildId: string,
+  options: Array<{ name: string; value: unknown }>,
+  interaction: APIChatInputApplicationCommandInteraction,
+): Promise<void> {
+  const roleId = getOption<string>(options, 'role');
+  if (!roleId) {
+    await editInteractionResponse(token, {
+      embeds: [errorEmbed('Missing Role', 'Please select a role to edit.')],
+      ephemeral: true,
+    });
+    return;
+  }
+
+  const name = getOption<string>(options, 'name');
+  const colorStr = getOption<string>(options, 'color');
+  const hoist = getOption<boolean>(options, 'hoist');
+  const mentionable = getOption<boolean>(options, 'mentionable');
+
+  if (name === undefined && colorStr === undefined && hoist === undefined && mentionable === undefined) {
+    await editInteractionResponse(token, {
+      embeds: [
+        errorEmbed(
+          'Missing Options',
+          'Please specify at least one property to update (name, color, hoist, or mentionable).',
+        ),
+      ],
+      ephemeral: true,
+    });
+    return;
+  }
+
+  let color: number | undefined;
+  if (colorStr !== undefined) {
+    const trimmed = colorStr.trim();
+    const hexMatch = trimmed.match(/^#?([0-9a-fA-F]{6})$/);
+    if (!hexMatch) {
+      await editInteractionResponse(token, {
+        embeds: [
+          errorEmbed(
+            'Invalid Color',
+            'Please provide a valid 6-character hex color (e.g. #FF0000 or FF0000).',
+          ),
+        ],
+        ephemeral: true,
+      });
+      return;
+    }
+    color = parseInt(hexMatch[1], 16);
+  }
+
+  try {
+    const rest = getDiscordRest();
+    const botId = resolveApplicationId();
+    const invokerId = interaction.member?.user?.id ?? interaction.user?.id ?? '';
+
+    // Fetch guild roles to check positions
+    const roles = (await discordApiCall(() =>
+      rest.get(Routes.guildRoles(guildId)),
+    )) as Array<{ id: string; name: string; position: number; tags?: { bot_id?: string } }>;
+
+    const targetRole = roles.find((r) => r.id === roleId);
+    const targetPosition = targetRole?.position ?? 0;
+
+    // Invoker highest role position
+    const invokerRoles = (interaction.member?.roles ?? []) as string[];
+    let invokerHighestPosition = 0;
+    for (const rid of invokerRoles) {
+      const r = roles.find((x) => x.id === rid);
+      if (r && r.position > invokerHighestPosition) {
+        invokerHighestPosition = r.position;
+      }
+    }
+
+    // Bot highest role position
+    let botHighestPosition = 0;
+    try {
+      const botMember = (await discordApiCall(() =>
+        rest.get(Routes.guildMember(guildId, botId)),
+      )) as { roles?: string[] };
+      if (botMember && Array.isArray(botMember.roles)) {
+        for (const rid of botMember.roles) {
+          const r = roles.find((x) => x.id === rid);
+          if (r && r.position > botHighestPosition) {
+            botHighestPosition = r.position;
+          }
+        }
+      }
+    } catch {
+      const botRole = roles.find((r) => r.tags?.bot_id === botId);
+      botHighestPosition = botRole ? botRole.position : Math.max(0, ...roles.map((r) => r.position));
+    }
+
+    // Server owner ID
+    let guildOwnerId = '';
+    try {
+      const guild = (await discordApiCall(() =>
+        rest.get(Routes.guild(guildId)),
+      )) as { owner_id?: string };
+      guildOwnerId = guild.owner_id ?? '';
+    } catch {}
+
+    const check = PermissionEngine.canActOn({
+      guildOwnerId,
+      invoker: {
+        id: invokerId,
+        highestRolePosition: invokerHighestPosition,
+        permissions: interaction.member?.permissions ?? '0',
+      },
+      target: {
+        id: roleId,
+        highestRolePosition: targetPosition,
+      },
+      bot: {
+        id: botId,
+        highestRolePosition: botHighestPosition,
+        permissions: PermissionFlags.MANAGE_ROLES,
+      },
+      action: 'manage_roles',
+    });
+
+    if (!check.allowed) {
+      await editInteractionResponse(token, {
+        embeds: [errorEmbed('Action Denied', check.message)],
+        ephemeral: true,
+      });
+      return;
+    }
+
+    const body: Record<string, unknown> = {};
+    if (name !== undefined) body.name = sanitizeRoleName(name);
+    if (color !== undefined) body.color = color;
+    if (hoist !== undefined) body.hoist = hoist;
+    if (mentionable !== undefined) body.mentionable = mentionable;
+
+    await discordApiCall(() => rest.patch(Routes.guildRole(guildId, roleId), { body }));
+
+    await editInteractionResponse(token, {
+      embeds: [successEmbed('Role Updated', `Successfully updated role <@&${roleId}>.`)],
+    });
+  } catch (err) {
+    console.error('[/role edit] Error:', err);
+    await editInteractionResponse(token, {
+      embeds: [errorEmbed('Failed to Edit Role', 'Could not update the role. Check my permissions and role hierarchy.')],
     });
   }
 }
@@ -272,6 +426,44 @@ export const roleCommand: RegisteredCommand = {
         {
           name: 'color',
           description: 'Role color (hex, e.g. #ff0000)',
+          type: ApplicationCommandOptionType.String,
+          required: false,
+        },
+        {
+          name: 'hoist',
+          description: 'Show role separately in member list',
+          type: ApplicationCommandOptionType.Boolean,
+          required: false,
+        },
+        {
+          name: 'mentionable',
+          description: 'Allow everyone to mention this role',
+          type: ApplicationCommandOptionType.Boolean,
+          required: false,
+        },
+      ],
+    },
+    {
+      name: 'edit',
+      description: 'Edit role settings',
+      type: ApplicationCommandOptionType.Subcommand,
+      options: [
+        {
+          name: 'role',
+          description: 'The role to edit',
+          type: ApplicationCommandOptionType.Role,
+          required: true,
+        },
+        {
+          name: 'name',
+          description: 'New role name',
+          type: ApplicationCommandOptionType.String,
+          required: false,
+          max_length: 100,
+        },
+        {
+          name: 'color',
+          description: 'New role color (hex, e.g. #ff0000 or ff0000)',
           type: ApplicationCommandOptionType.String,
           required: false,
         },

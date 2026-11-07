@@ -59,6 +59,14 @@ import { ticketCommand } from '@/commands/tickets';
 import { birthdayCommand } from '@/commands/birthdays';
 import { reactionRoleCommand } from '@/commands/reaction-roles';
 import { starboardCommand } from '@/commands/starboard';
+import { categoryCommand } from '@/commands/category';
+import {
+  banCommand,
+  kickCommand,
+  timeoutCommand,
+  warnCommand,
+  purgeCommand,
+} from '@/commands/standalone-mod';
 
 // ─── Interfaces ───────────────────────────────────────────────────────────
 
@@ -205,6 +213,14 @@ const BIRTHDAY_COMMAND_NAMES = new Set(['birthday']);
 
 const REACTION_ROLE_COMMAND_NAMES = new Set(['reaction-role']);
 const STARBOARD_COMMAND_NAMES = new Set(['starboard']);
+const CATEGORY_COMMAND_NAMES = new Set(['category']);
+const STANDALONE_MOD_COMMAND_NAMES = new Set([
+  'ban',
+  'kick',
+  'timeout',
+  'warn',
+  'purge',
+]);
 
 /**
  * Retrieve a registered command by its primary name.
@@ -245,6 +261,14 @@ export function getCommand(name: string): RegisteredCommand | undefined {
   }
   if (!cmd && STARBOARD_COMMAND_NAMES.has(name)) {
     registerStarboardCommands();
+    cmd = registry.get(name);
+  }
+  if (!cmd && CATEGORY_COMMAND_NAMES.has(name)) {
+    registerCategoryCommands();
+    cmd = registry.get(name);
+  }
+  if (!cmd && STANDALONE_MOD_COMMAND_NAMES.has(name)) {
+    registerStandaloneModCommands();
     cmd = registry.get(name);
   }
   return cmd;
@@ -356,6 +380,24 @@ export function registerStarboardCommands(): void {
 }
 
 /**
+ * Register all Category Management commands into the registry.
+ */
+export function registerCategoryCommands(): void {
+  registerCommand(categoryCommand);
+}
+
+/**
+ * Register all Standalone Moderation commands into the registry.
+ */
+export function registerStandaloneModCommands(): void {
+  registerCommand(banCommand);
+  registerCommand(kickCommand);
+  registerCommand(timeoutCommand);
+  registerCommand(warnCommand);
+  registerCommand(purgeCommand);
+}
+
+/**
  * Register all commands across all suites.
  */
 export function registerAllCommands(): void {
@@ -371,6 +413,8 @@ export function registerAllCommands(): void {
   registerBirthdayCommands();
   registerReactionRoleCommands();
   registerStarboardCommands();
+  registerCategoryCommands();
+  registerStandaloneModCommands();
 }
 
 /**

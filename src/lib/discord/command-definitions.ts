@@ -27,12 +27,21 @@ export interface CommandDefinition {
 export const COMMANDS: CommandDefinition[] = getAllDiscordCommandJson() as CommandDefinition[];
 
 /**
- * Retrieve all registered application commands across all active suites (Builtin, Games, Levels, Economy, Custom Screens, Premium, Tickets, Birthdays, Reaction Roles, Starboard).
+ * Retrieve all registered application commands across all active suites (Builtin, Games, Levels, Economy, Custom Screens, Premium, Tickets, Birthdays, Reaction Roles, Starboard, Category, Moderation).
  */
 export function getAllApplicationCommands(): CommandDefinition[] {
   registerAllCommands();
   return getAllCommands().map(toDiscordCommandJson) as CommandDefinition[];
 }
+
+export {
+  categoryCommand,
+  banCommand,
+  kickCommand,
+  timeoutCommand,
+  warnCommand,
+  purgeCommand,
+} from '@/commands';
 
 /**
  * Retrieve dynamically formatted command definitions for Discord registration.
