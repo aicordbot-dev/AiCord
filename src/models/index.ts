@@ -18,6 +18,8 @@ export { EconomyUser } from './EconomyUser';
 export { EconomyShopItem } from './EconomyShopItem';
 export { UserProfileStyle } from './UserProfileStyle';
 export { GuildSubscription } from './GuildSubscription';
+export { TicketPanel } from './TicketPanel';
+export { Ticket } from './Ticket';
 
 export type { IGuildConfig } from './GuildConfig';
 export type { IBuildJob, BuildJobStatus, CreatedIds, BuildStep } from './BuildJob';
@@ -39,3 +41,5 @@ export type {
   GuildFeatures,
   CustomBranding,
 } from './GuildSubscription';
+export type { ITicketPanel, TicketPanelCategory } from './TicketPanel';
+export type { ITicket, TicketStatus } from './Ticket';

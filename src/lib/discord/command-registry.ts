@@ -55,6 +55,7 @@ import {
 } from '@/commands/economy';
 import { customizeCommand } from '@/commands/customize';
 import { premiumCommand } from '@/commands/premium';
+import { ticketCommand } from '@/commands/tickets';
 
 // ─── Interfaces ───────────────────────────────────────────────────────────
 
@@ -195,6 +196,8 @@ const CUSTOMIZE_COMMAND_NAMES = new Set(['customize']);
 
 const PREMIUM_COMMAND_NAMES = new Set(['premium']);
 
+const TICKET_COMMAND_NAMES = new Set(['ticket']);
+
 /**
  * Retrieve a registered command by its primary name.
  */
@@ -218,6 +221,10 @@ export function getCommand(name: string): RegisteredCommand | undefined {
   }
   if (!cmd && PREMIUM_COMMAND_NAMES.has(name)) {
     registerPremiumCommands();
+    cmd = registry.get(name);
+  }
+  if (!cmd && TICKET_COMMAND_NAMES.has(name)) {
+    registerTicketCommands();
     cmd = registry.get(name);
   }
   return cmd;
@@ -301,6 +308,13 @@ export function registerPremiumCommands(): void {
 }
 
 /**
+ * Register all Phase 38 Interactive Ticket Hub commands into the registry.
+ */
+export function registerTicketCommands(): void {
+  registerCommand(ticketCommand);
+}
+
+/**
  * Register all commands across all suites.
  */
 export function registerAllCommands(): void {
@@ -312,6 +326,7 @@ export function registerAllCommands(): void {
   registerEconomyCommands();
   registerCustomizeCommands();
   registerPremiumCommands();
+  registerTicketCommands();
 }
 
 /**

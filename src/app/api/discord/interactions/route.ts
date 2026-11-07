@@ -425,6 +425,14 @@ async function handleComponentAsync(
       await handleCustomizeInteraction(token, rest, userId, component);
       break;
     }
+    case 'ticket_create':
+    case 'ticket_claim':
+    case 'ticket_close':
+    case 'ticket_rate': {
+      const { handleTicketComponent } = await import('@/commands/tickets');
+      await handleTicketComponent(token, customId, userId, guildId, component);
+      break;
+    }
     default: {
       console.warn(`[Interactions] Unknown component action: ${action}`);
     }
