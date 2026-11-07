@@ -19,6 +19,7 @@ export interface IGuildConfig extends Document {
   aiModEnabled: boolean;
   features: Record<string, boolean>; // Module toggle map
   disabledCommands?: string[]; // Disabled slash command names
+  theme?: string; // Server default visual theme
   createdAt: Date;
   updatedAt: Date;
 }
@@ -65,6 +66,10 @@ const GuildConfigSchema = new Schema<IGuildConfig>(
     disabledCommands: {
       type: [String],
       default: [],
+    },
+    theme: {
+      type: String,
+      default: 'cyberpunk',
     },
   },
   {

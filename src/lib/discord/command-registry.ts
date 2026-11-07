@@ -53,6 +53,7 @@ import {
   shopAdminCommand,
   richCommand,
 } from '@/commands/economy';
+import { customizeCommand } from '@/commands/customize';
 
 // ─── Interfaces ───────────────────────────────────────────────────────────
 
@@ -189,6 +190,8 @@ const GAME_COMMAND_NAMES = new Set([
   'slots',
 ]);
 
+const CUSTOMIZE_COMMAND_NAMES = new Set(['customize']);
+
 /**
  * Retrieve a registered command by its primary name.
  */
@@ -204,6 +207,10 @@ export function getCommand(name: string): RegisteredCommand | undefined {
   }
   if (!cmd && ECONOMY_COMMAND_NAMES.has(name)) {
     registerEconomyCommands();
+    cmd = registry.get(name);
+  }
+  if (!cmd && CUSTOMIZE_COMMAND_NAMES.has(name)) {
+    registerCustomizeCommands();
     cmd = registry.get(name);
   }
   return cmd;
@@ -258,15 +265,6 @@ export function registerGameCommands(): void {
 /**
  * Register all Phase 28 Server Economy commands into the registry.
  */
-export function registerAllCommands(): void {
-  if (!getCommand('build')) {
-    registerBuiltinCommands();
-  }
-  registerLevelCommands();
-  registerGameCommands();
-  registerEconomyCommands();
-}
-
 export function registerEconomyCommands(): void {
   registerCommand(balanceCommand);
   registerCommand(dailyCommand);
@@ -279,6 +277,26 @@ export function registerEconomyCommands(): void {
   registerCommand(buyCommand);
   registerCommand(shopAdminCommand);
   registerCommand(richCommand);
+}
+
+/**
+ * Register all Universal Custom Screens Suite commands into the registry.
+ */
+export function registerCustomizeCommands(): void {
+  registerCommand(customizeCommand);
+}
+
+/**
+ * Register all commands across all suites.
+ */
+export function registerAllCommands(): void {
+  if (!getCommand('build')) {
+    registerBuiltinCommands();
+  }
+  registerLevelCommands();
+  registerGameCommands();
+  registerEconomyCommands();
+  registerCustomizeCommands();
 }
 
 /**

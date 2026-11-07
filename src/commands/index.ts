@@ -11,3 +11,4 @@ export * from './mod';
 export * from './games';
 export * from './levels';
 export * from './economy';
+export * from './customize';

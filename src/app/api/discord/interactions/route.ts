@@ -420,6 +420,11 @@ async function handleComponentAsync(
       await handleRichInteraction(token, guildId, targetPage, component);
       break;
     }
+    case 'customize': {
+      const { handleCustomizeInteraction } = await import('@/commands/customize');
+      await handleCustomizeInteraction(token, rest, userId, component);
+      break;
+    }
     default: {
       console.warn(`[Interactions] Unknown component action: ${action}`);
     }
