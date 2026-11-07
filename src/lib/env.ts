@@ -1,8 +1,25 @@
 import { z } from 'zod';
 
-const emptyStringToUndefined = z.literal('').transform(() => undefined);
-const optionalUrl = z.union([z.string().url(), emptyStringToUndefined]).optional();
-const optionalString = z.union([z.string(), emptyStringToUndefined]).optional();
+const optionalUrl = z
+  .string()
+  .trim()
+  .optional()
+  .transform((val) => {
+    if (!val || val === '' || val === 'undefined' || val === 'null') return undefined;
+    try {
+      new URL(val);
+      return val;
+    } catch {
+      console.warn(`[Env] Ignored invalid URL format for optional variable: ${val}`);
+      return undefined;
+    }
+  });
+
+const optionalString = z
+  .string()
+  .trim()
+  .optional()
+  .transform((val) => (val && val !== 'undefined' && val !== 'null' ? val : undefined));
 
 const envSchema = z.object({
   // Discord Application
