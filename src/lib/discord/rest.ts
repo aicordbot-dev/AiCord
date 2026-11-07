@@ -8,11 +8,27 @@ import { env } from '@/lib/env';
 
 let _rest: REST | null = null;
 
+function resolveBotToken(): string {
+  try {
+    if (env.DISCORD_BOT_TOKEN) {
+      return env.DISCORD_BOT_TOKEN;
+    }
+  } catch {
+    // env validation failed or not initialized
+  }
+  return process.env.DISCORD_BOT_TOKEN || '';
+}
+
 export function getDiscordRest(): REST {
   if (!_rest) {
-    _rest = new REST({ version: '10' }).setToken(env.DISCORD_BOT_TOKEN);
+    const token = resolveBotToken();
+    _rest = new REST({ version: '10' }).setToken(token);
   }
   return _rest;
+}
+
+export function resetDiscordRest(): void {
+  _rest = null;
 }
 
 /**

@@ -21,10 +21,12 @@ export interface InteractionResponseOptions {
 type ResponseHandler = (
   token: string,
   options: InteractionResponseOptions,
+  appId?: string,
 ) => Promise<void>;
 type FollowUpHandler = (
   token: string,
   options: InteractionResponseOptions,
+  appId?: string,
 ) => Promise<{ id: string }>;
 
 let customResponseHandler: ResponseHandler | null = null;
@@ -39,31 +41,62 @@ export function setFollowUpHandler(handler: FollowUpHandler | null): void {
 }
 
 /**
+ * Resiliently resolve the Discord Application ID.
+ * Priority:
+ * 1. Explicitly provided appId
+ * 2. process.env.DISCORD_APP_ID
+ * 3. process.env.DISCORD_CLIENT_ID
+ * 4. env.DISCORD_APP_ID (safe try/catch)
+ */
+export function resolveApplicationId(appId?: string): string {
+  if (appId && appId.trim()) {
+    return appId.trim();
+  }
+  if (process.env.DISCORD_APP_ID && process.env.DISCORD_APP_ID.trim()) {
+    return process.env.DISCORD_APP_ID.trim();
+  }
+  if (process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_ID.trim()) {
+    return process.env.DISCORD_CLIENT_ID.trim();
+  }
+  try {
+    if (env.DISCORD_APP_ID && env.DISCORD_APP_ID.trim()) {
+      return env.DISCORD_APP_ID.trim();
+    }
+  } catch {
+    // env.DISCORD_APP_ID could throw if env validation failed
+  }
+  return '';
+}
+
+/**
  * Edit the original deferred response (the "thinking..." message).
  * Called after performing async work.
  */
 export async function editInteractionResponse(
   interactionToken: string,
   options: InteractionResponseOptions,
+  appId?: string,
 ): Promise<void> {
   if (customResponseHandler) {
-    await customResponseHandler(interactionToken, options);
+    await customResponseHandler(interactionToken, options, appId);
     return;
   }
 
+  const targetAppId = resolveApplicationId(appId);
   const rest = getDiscordRest();
   const { content, embeds, components, ephemeral, flags } = options;
 
   const computedFlags = flags ?? (ephemeral ? EPHEMERAL_FLAG : 0);
 
   await discordApiCall(() =>
-    rest.patch(Routes.webhookMessage(env.DISCORD_APP_ID, interactionToken), {
+    rest.patch(Routes.webhookMessage(targetAppId, interactionToken), {
       body: {
         content: content ?? null,
         embeds: embeds ?? [],
         components: components ?? [],
         flags: computedFlags,
       },
+      auth: false,
     }),
   );
 }
@@ -75,37 +108,66 @@ export async function editInteractionResponse(
 export async function sendFollowUp(
   interactionToken: string,
   options: InteractionResponseOptions,
+  appId?: string,
 ): Promise<{ id: string }> {
   if (customFollowUpHandler) {
-    return await customFollowUpHandler(interactionToken, options);
+    return await customFollowUpHandler(interactionToken, options, appId);
   }
 
+  const targetAppId = resolveApplicationId(appId);
   const rest = getDiscordRest();
   const { content, embeds, components, ephemeral, flags } = options;
 
   const computedFlags = flags ?? (ephemeral ? EPHEMERAL_FLAG : 0);
 
   return discordApiCall(() =>
-    rest.post(Routes.webhook(env.DISCORD_APP_ID, interactionToken), {
+    rest.post(Routes.webhook(targetAppId, interactionToken), {
       body: {
         content: content ?? null,
         embeds: embeds ?? [],
         components: components ?? [],
         flags: computedFlags,
       },
+      auth: false,
     }) as Promise<{ id: string }>,
   );
 }
+
+export const createFollowupMessage = sendFollowUp;
 
 /**
  * Delete the original interaction response.
  */
 export async function deleteInteractionResponse(
   interactionToken: string,
+  appId?: string,
 ): Promise<void> {
+  const targetAppId = resolveApplicationId(appId);
   const rest = getDiscordRest();
   await discordApiCall(() =>
-    rest.delete(Routes.webhookMessage(env.DISCORD_APP_ID, interactionToken)),
+    rest.delete(Routes.webhookMessage(targetAppId, interactionToken), {
+      auth: false,
+    }),
+  );
+}
+
+/**
+ * Delete a follow-up message or original interaction response.
+ */
+export async function deleteFollowupMessage(
+  interactionToken: string,
+  messageId?: string,
+  appId?: string,
+): Promise<void> {
+  const targetAppId = resolveApplicationId(appId);
+  const rest = getDiscordRest();
+  const route = messageId && messageId !== '@original'
+    ? Routes.webhookMessage(targetAppId, interactionToken, messageId)
+    : Routes.webhookMessage(targetAppId, interactionToken);
+  await discordApiCall(() =>
+    rest.delete(route, {
+      auth: false,
+    }),
   );
 }
 

@@ -13,7 +13,7 @@
  * then do async work and edit via webhook.
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import {
   verifyKey,
   InteractionType,
@@ -29,6 +29,8 @@ import {
   handleCommandInteraction,
   handleAutocompleteInteraction,
 } from '@/lib/discord/command-registry';
+
+export const maxDuration = 60;
 
 // ─── Response constants ───────────────────────────────────────────────────
 
@@ -109,9 +111,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     if (type === InteractionType.APPLICATION_COMMAND) {
       const cmd = interaction as unknown as APIChatInputApplicationCommandInteraction;
 
-      // Fire-and-forget the async work via central command registry after returning deferred immediately
-      handleCommandInteraction(cmd).catch((err) => {
-        console.error(`[Interactions] Error handling command "${cmd.data?.name}":`, err);
+      // Keep serverless execution context alive until async work completes
+      after(async () => {
+        try {
+          await handleCommandInteraction(cmd);
+        } catch (err) {
+          console.error(`[Interactions] Error handling command "${cmd.data?.name}":`, err);
+        }
       });
 
       return NextResponse.json(DEFERRED_CHANNEL_MESSAGE);
@@ -245,8 +251,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       }
 
       // Default async handling for other components
-      handleComponentAsync(component, customId, userId).catch((err) => {
-        console.error(`[Interactions] Error handling component "${customId}":`, err);
+      after(async () => {
+        try {
+          await handleComponentAsync(component, customId, userId);
+        } catch (err) {
+          console.error(`[Interactions] Error handling component "${customId}":`, err);
+        }
       });
 
       return NextResponse.json(DEFERRED_UPDATE_MESSAGE);
@@ -258,9 +268,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       const customId = modal.data?.custom_id ?? '';
 
       if (customId.startsWith('build_modal_')) {
-        const { handleBuildModalSubmit } = await import('@/commands/build');
-        handleBuildModalSubmit(modal).catch((err) => {
-          console.error('[Interactions] Error handling build modal submit:', err);
+        after(async () => {
+          try {
+            const { handleBuildModalSubmit } = await import('@/commands/build');
+            await handleBuildModalSubmit(modal);
+          } catch (err) {
+            console.error('[Interactions] Error handling build modal submit:', err);
+          }
         });
         return NextResponse.json(DEFERRED_UPDATE_MESSAGE);
       }

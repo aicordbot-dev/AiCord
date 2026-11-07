@@ -113,6 +113,7 @@ const registry = new Map<string, RegisteredCommand>();
 type ResponseHandler = (
   token: string,
   options: InteractionResponseOptions,
+  appId?: string,
 ) => Promise<void>;
 let customResponseHandler: ResponseHandler | null = null;
 
@@ -123,12 +124,13 @@ export function setResponseHandler(handler: ResponseHandler | null): void {
 async function sendResponse(
   token: string,
   options: InteractionResponseOptions,
+  appId?: string,
 ): Promise<void> {
   if (customResponseHandler) {
-    await customResponseHandler(token, options);
+    await customResponseHandler(token, options, appId);
     return;
   }
-  await editInteractionResponse(token, options);
+  await editInteractionResponse(token, options, appId);
 }
 
 // ─── Core Functions ───────────────────────────────────────────────────────
@@ -355,6 +357,7 @@ export async function handleCommandInteraction(
   interaction: APIChatInputApplicationCommandInteraction,
 ): Promise<void> {
   const commandName = interaction?.data?.name;
+  const appId = interaction?.application_id;
   if (!commandName) {
     console.warn('[CommandRegistry] Interaction payload missing command name');
     return;
@@ -364,15 +367,19 @@ export async function handleCommandInteraction(
   if (!cmd) {
     console.warn(`[CommandRegistry] Unknown command requested: "/${commandName}"`);
     try {
-      await sendResponse(interaction.token, {
-        embeds: [
-          errorEmbed(
-            'Unknown Command',
-            `The command \`/${commandName}\` is not recognized.`,
-          ),
-        ],
-        ephemeral: true,
-      });
+      await sendResponse(
+        interaction.token,
+        {
+          embeds: [
+            errorEmbed(
+              'Unknown Command',
+              `The command \`/${commandName}\` is not recognized.`,
+            ),
+          ],
+          ephemeral: true,
+        },
+        appId,
+      );
     } catch {
       // Ignore response failure for unknown command
     }
@@ -392,15 +399,19 @@ export async function handleCommandInteraction(
         Array.isArray(guildConfig.disabledCommands) &&
         guildConfig.disabledCommands.includes(cmd.name)
       ) {
-        await sendResponse(interaction.token, {
-          embeds: [
-            errorEmbed(
-              'Command Disabled',
-              `The command \`/${cmd.name}\` is currently disabled in this server.`,
-            ),
-          ],
-          ephemeral: true,
-        });
+        await sendResponse(
+          interaction.token,
+          {
+            embeds: [
+              errorEmbed(
+                'Command Disabled',
+                `The command \`/${cmd.name}\` is currently disabled in this server.`,
+              ),
+            ],
+            ephemeral: true,
+          },
+          appId,
+        );
         return;
       }
     } catch (guildConfigErr) {
@@ -424,15 +435,19 @@ export async function handleCommandInteraction(
         ? Math.ceil(rlResult.retryAfterMs / 1000)
         : Math.ceil(rateLimitConfig.windowMs / 1000);
 
-      await sendResponse(interaction.token, {
-        embeds: [
-          warningEmbed(
-            'Rate Limit Exceeded',
-            `You are using \`/${cmd.name}\` too quickly. Please wait **${retrySec}s** before trying again.`,
-          ),
-        ],
-        ephemeral: true,
-      });
+      await sendResponse(
+        interaction.token,
+        {
+          embeds: [
+            warningEmbed(
+              'Rate Limit Exceeded',
+              `You are using \`/${cmd.name}\` too quickly. Please wait **${retrySec}s** before trying again.`,
+            ),
+          ],
+          ephemeral: true,
+        },
+        appId,
+      );
       return;
     }
   }
@@ -447,15 +462,19 @@ export async function handleCommandInteraction(
     );
 
     try {
-      await sendResponse(interaction.token, {
-        embeds: [
-          errorEmbed(
-            'Command Error',
-            'An unexpected error occurred while executing this command. Please try again later.',
-          ),
-        ],
-        ephemeral: true,
-      });
+      await sendResponse(
+        interaction.token,
+        {
+          embeds: [
+            errorEmbed(
+              'Command Error',
+              'An unexpected error occurred while executing this command. Please try again later.',
+            ),
+          ],
+          ephemeral: true,
+        },
+        appId,
+      );
     } catch (responseErr) {
       console.error(
         `[CommandRegistry] Failed to send error response for "/${cmd.name}":`,
