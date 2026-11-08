@@ -65,6 +65,7 @@ import { radioCommand } from '@/commands/radio';
 import { skinsCommand, unboxCommand } from '@/commands/skins';
 import { giveawayCommand } from '@/commands/giveaway';
 import { modmailCommand } from '@/commands/modmail';
+import { bountyCommand } from '@/commands/bounty';
 import {
   banCommand,
   kickCommand,
@@ -231,6 +232,7 @@ const RADIO_COMMAND_NAMES = new Set(['radio']);
 const SKINS_COMMAND_NAMES = new Set(['skins', 'unbox']);
 const GIVEAWAY_COMMAND_NAMES = new Set(['giveaway']);
 const MODMAIL_COMMAND_NAMES = new Set(['modmail']);
+const BOUNTY_COMMAND_NAMES = new Set(['bounty']);
 
 /**
  * Retrieve a registered command by its primary name.
@@ -299,6 +301,10 @@ export function getCommand(name: string): RegisteredCommand | undefined {
   }
   if (!cmd && MODMAIL_COMMAND_NAMES.has(name)) {
     registerModmailCommands();
+    cmd = registry.get(name);
+  }
+  if (!cmd && BOUNTY_COMMAND_NAMES.has(name)) {
+    registerBountyCommands();
     cmd = registry.get(name);
   }
   return cmd;
@@ -464,6 +470,13 @@ export function registerModmailCommands(): void {
 }
 
 /**
+ * Register all Milestone 4 Service 16 Community Bounty Board commands into the registry.
+ */
+export function registerBountyCommands(): void {
+  registerCommand(bountyCommand);
+}
+
+/**
  * Register all commands across all suites.
  */
 export function registerAllCommands(): void {
@@ -486,6 +499,7 @@ export function registerAllCommands(): void {
   registerSkinsCommands();
   registerGiveawayCommands();
   registerModmailCommands();
+  registerBountyCommands();
 }
 
 /**

@@ -472,7 +472,19 @@ async function handleComponentAsync(
       await handleGiveawayComponent(token, customId, userId, guildId, component);
       break;
     }
+    case 'bounty_claim':
+    case 'bounty_pay':
+    case 'bounty_cancel': {
+      const { handleBountyComponent } = await import('@/commands/bounty');
+      await handleBountyComponent(token, customId, userId, guildId, component);
+      break;
+    }
     default: {
+      if (customId.startsWith('bounty_')) {
+        const { handleBountyComponent } = await import('@/commands/bounty');
+        await handleBountyComponent(token, customId, userId, guildId, component);
+        break;
+      }
       if (customId.startsWith('mm_')) {
         const { handleModmailComponent } = await import('@/commands/modmail');
         await handleModmailComponent(token, customId, userId, guildId, component);

@@ -47,6 +47,7 @@ export {
   unboxCommand,
   giveawayCommand,
   modmailCommand,
+  bountyCommand,
 } from '@/commands';
 
 /**

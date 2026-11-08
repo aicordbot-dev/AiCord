@@ -24,3 +24,4 @@ export * from './radio';
 export * from './skins';
 export * from './giveaway';
 export * from './modmail';
+export * from './bounty';

@@ -31,6 +31,7 @@ export { UserSkins } from './UserSkins';
 export { Giveaway } from './Giveaway';
 export { ModmailConfig } from './ModmailConfig';
 export { ModmailThread } from './ModmailThread';
+export { Bounty } from './Bounty';
 
 export type { IGuildConfig } from './GuildConfig';
 export type { IBuildJob, BuildJobStatus, CreatedIds, BuildStep } from './BuildJob';
@@ -76,3 +77,4 @@ export type { IUserSkins } from './UserSkins';
 export type { IGiveaway, IGiveawayRequirements } from './Giveaway';
 export type { IModmailConfig, ICannedResponse } from './ModmailConfig';
 export type { IModmailThread, IModmailMessage, ModmailStatus } from './ModmailThread';
+export type { IBounty, BountyCategory, BountyStatus } from './Bounty';
