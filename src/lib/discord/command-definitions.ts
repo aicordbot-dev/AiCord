@@ -27,7 +27,7 @@ export interface CommandDefinition {
 export const COMMANDS: CommandDefinition[] = getAllDiscordCommandJson() as CommandDefinition[];
 
 /**
- * Retrieve all registered application commands across all active suites (Builtin, Games, Levels, Economy, Custom Screens, Premium, Tickets, Birthdays, Reaction Roles, Starboard, Category, Moderation, RPG Adventure).
+ * Retrieve all registered application commands across all active suites (Builtin, Games, Levels, Economy, Custom Screens, Premium, Tickets, Birthdays, Reaction Roles, Starboard, Category, Moderation, RPG Adventure, Radio, Skins, Giveaways).
  */
 export function getAllApplicationCommands(): CommandDefinition[] {
   registerAllCommands();
@@ -45,6 +45,7 @@ export {
   radioCommand,
   skinsCommand,
   unboxCommand,
+  giveawayCommand,
 } from '@/commands';
 
 /**

@@ -462,7 +462,17 @@ async function handleComponentAsync(
       await handleSkinsComponent(token, customId, userId, guildId, component);
       break;
     }
+    case 'gw_enter': {
+      const { handleGiveawayComponent } = await import('@/commands/giveaway');
+      await handleGiveawayComponent(token, customId, userId, guildId, component);
+      break;
+    }
     default: {
+      if (customId.startsWith('gw_')) {
+        const { handleGiveawayComponent } = await import('@/commands/giveaway');
+        await handleGiveawayComponent(token, customId, userId, guildId, component);
+        break;
+      }
       if (customId.startsWith('radio_')) {
         const { handleRadioComponent } = await import('@/commands/radio');
         await handleRadioComponent(token, customId, userId, guildId, component);

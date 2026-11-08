@@ -28,6 +28,7 @@ export { AdventurePlayer } from './AdventurePlayer';
 export { RadioSession } from './RadioSession';
 export { SkinItem } from './SkinItem';
 export { UserSkins } from './UserSkins';
+export { Giveaway } from './Giveaway';
 
 export type { IGuildConfig } from './GuildConfig';
 export type { IBuildJob, BuildJobStatus, CreatedIds, BuildStep } from './BuildJob';
@@ -70,3 +71,4 @@ export type {
 } from './RadioSession';
 export type { ISkinItem, SkinRarity, SkinType, ISkinItemDocument } from './SkinItem';
 export type { IUserSkins } from './UserSkins';
+export type { IGiveaway, IGiveawayRequirements } from './Giveaway';

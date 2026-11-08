@@ -63,6 +63,7 @@ import { categoryCommand } from '@/commands/category';
 import { adventureCommand } from '@/commands/adventure';
 import { radioCommand } from '@/commands/radio';
 import { skinsCommand, unboxCommand } from '@/commands/skins';
+import { giveawayCommand } from '@/commands/giveaway';
 import {
   banCommand,
   kickCommand,
@@ -227,6 +228,7 @@ const STANDALONE_MOD_COMMAND_NAMES = new Set([
 const ADVENTURE_COMMAND_NAMES = new Set(['adventure']);
 const RADIO_COMMAND_NAMES = new Set(['radio']);
 const SKINS_COMMAND_NAMES = new Set(['skins', 'unbox']);
+const GIVEAWAY_COMMAND_NAMES = new Set(['giveaway']);
 
 /**
  * Retrieve a registered command by its primary name.
@@ -287,6 +289,10 @@ export function getCommand(name: string): RegisteredCommand | undefined {
   }
   if (!cmd && SKINS_COMMAND_NAMES.has(name)) {
     registerSkinsCommands();
+    cmd = registry.get(name);
+  }
+  if (!cmd && GIVEAWAY_COMMAND_NAMES.has(name)) {
+    registerGiveawayCommands();
     cmd = registry.get(name);
   }
   return cmd;
@@ -438,6 +444,13 @@ export function registerSkinsCommands(): void {
 }
 
 /**
+ * Register all Milestone 4 Service 12 Giveaways commands into the registry.
+ */
+export function registerGiveawayCommands(): void {
+  registerCommand(giveawayCommand);
+}
+
+/**
  * Register all commands across all suites.
  */
 export function registerAllCommands(): void {
@@ -458,6 +471,7 @@ export function registerAllCommands(): void {
   registerAdventureCommands();
   registerRadioCommands();
   registerSkinsCommands();
+  registerGiveawayCommands();
 }
 
 /**

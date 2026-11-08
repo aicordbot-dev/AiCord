@@ -22,3 +22,4 @@ export * from './starboard';
 export * from './adventure';
 export * from './radio';
 export * from './skins';
+export * from './giveaway';
