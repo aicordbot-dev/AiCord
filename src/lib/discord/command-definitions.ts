@@ -46,6 +46,7 @@ export {
   skinsCommand,
   unboxCommand,
   giveawayCommand,
+  modmailCommand,
 } from '@/commands';
 
 /**

@@ -64,6 +64,7 @@ import { adventureCommand } from '@/commands/adventure';
 import { radioCommand } from '@/commands/radio';
 import { skinsCommand, unboxCommand } from '@/commands/skins';
 import { giveawayCommand } from '@/commands/giveaway';
+import { modmailCommand } from '@/commands/modmail';
 import {
   banCommand,
   kickCommand,
@@ -229,6 +230,7 @@ const ADVENTURE_COMMAND_NAMES = new Set(['adventure']);
 const RADIO_COMMAND_NAMES = new Set(['radio']);
 const SKINS_COMMAND_NAMES = new Set(['skins', 'unbox']);
 const GIVEAWAY_COMMAND_NAMES = new Set(['giveaway']);
+const MODMAIL_COMMAND_NAMES = new Set(['modmail']);
 
 /**
  * Retrieve a registered command by its primary name.
@@ -293,6 +295,10 @@ export function getCommand(name: string): RegisteredCommand | undefined {
   }
   if (!cmd && GIVEAWAY_COMMAND_NAMES.has(name)) {
     registerGiveawayCommands();
+    cmd = registry.get(name);
+  }
+  if (!cmd && MODMAIL_COMMAND_NAMES.has(name)) {
+    registerModmailCommands();
     cmd = registry.get(name);
   }
   return cmd;
@@ -451,6 +457,13 @@ export function registerGiveawayCommands(): void {
 }
 
 /**
+ * Register all Milestone 4 Service 13 Anonymous Modmail commands into the registry.
+ */
+export function registerModmailCommands(): void {
+  registerCommand(modmailCommand);
+}
+
+/**
  * Register all commands across all suites.
  */
 export function registerAllCommands(): void {
@@ -472,6 +485,7 @@ export function registerAllCommands(): void {
   registerRadioCommands();
   registerSkinsCommands();
   registerGiveawayCommands();
+  registerModmailCommands();
 }
 
 /**

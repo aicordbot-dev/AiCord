@@ -29,6 +29,8 @@ export { RadioSession } from './RadioSession';
 export { SkinItem } from './SkinItem';
 export { UserSkins } from './UserSkins';
 export { Giveaway } from './Giveaway';
+export { ModmailConfig } from './ModmailConfig';
+export { ModmailThread } from './ModmailThread';
 
 export type { IGuildConfig } from './GuildConfig';
 export type { IBuildJob, BuildJobStatus, CreatedIds, BuildStep } from './BuildJob';
@@ -72,3 +74,5 @@ export type {
 export type { ISkinItem, SkinRarity, SkinType, ISkinItemDocument } from './SkinItem';
 export type { IUserSkins } from './UserSkins';
 export type { IGiveaway, IGiveawayRequirements } from './Giveaway';
+export type { IModmailConfig, ICannedResponse } from './ModmailConfig';
+export type { IModmailThread, IModmailMessage, ModmailStatus } from './ModmailThread';

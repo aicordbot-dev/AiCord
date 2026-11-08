@@ -462,12 +462,22 @@ async function handleComponentAsync(
       await handleSkinsComponent(token, customId, userId, guildId, component);
       break;
     }
+    case 'mm_close': {
+      const { handleModmailComponent } = await import('@/commands/modmail');
+      await handleModmailComponent(token, customId, userId, guildId, component);
+      break;
+    }
     case 'gw_enter': {
       const { handleGiveawayComponent } = await import('@/commands/giveaway');
       await handleGiveawayComponent(token, customId, userId, guildId, component);
       break;
     }
     default: {
+      if (customId.startsWith('mm_')) {
+        const { handleModmailComponent } = await import('@/commands/modmail');
+        await handleModmailComponent(token, customId, userId, guildId, component);
+        break;
+      }
       if (customId.startsWith('gw_')) {
         const { handleGiveawayComponent } = await import('@/commands/giveaway');
         await handleGiveawayComponent(token, customId, userId, guildId, component);
