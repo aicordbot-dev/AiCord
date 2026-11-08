@@ -71,6 +71,7 @@ import { runCommand } from '@/commands/run';
 import { petCommand } from '@/commands/pet';
 import { worldclockCommand, meetCommand } from '@/commands/worldclock';
 import { transcribeCommand } from '@/commands/transcribe';
+import { gitCommand } from '@/commands/git';
 import {
   banCommand,
   kickCommand,
@@ -243,6 +244,7 @@ const SANDBOX_COMMAND_NAMES = new Set(['run']);
 const PET_COMMAND_NAMES = new Set(['pet']);
 const WORLDCLOCK_COMMAND_NAMES = new Set(['worldclock', 'meet']);
 const TRANSCRIBE_COMMAND_NAMES = new Set(['transcribe']);
+const GIT_COMMAND_NAMES = new Set(['git']);
 
 /**
  * Retrieve a registered command by its primary name.
@@ -331,6 +333,10 @@ export function getCommand(name: string): RegisteredCommand | undefined {
   }
   if (!cmd && TRANSCRIBE_COMMAND_NAMES.has(name)) {
     registerTranscribeCommands();
+    cmd = registry.get(name);
+  }
+  if (!cmd && GIT_COMMAND_NAMES.has(name)) {
+    registerGitCommands();
     cmd = registry.get(name);
   }
   if (!cmd && SANDBOX_COMMAND_NAMES.has(name)) {
@@ -543,6 +549,13 @@ export function registerTranscribeCommands(): void {
 }
 
 /**
+ * Register all Service 6 GitHub/GitLab Webhook Hub & AI PR Explainer commands into the registry.
+ */
+export function registerGitCommands(): void {
+  registerCommand(gitCommand);
+}
+
+/**
  * Register all commands across all suites.
  */
 export function registerAllCommands(): void {
@@ -571,6 +584,7 @@ export function registerAllCommands(): void {
   registerPetCommands();
   registerWorldClockCommands();
   registerTranscribeCommands();
+  registerGitCommands();
 }
 
 /**

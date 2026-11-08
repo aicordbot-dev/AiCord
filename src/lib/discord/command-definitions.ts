@@ -54,6 +54,7 @@ export {
   worldclockCommand,
   meetCommand,
   transcribeCommand,
+  gitCommand,
 } from '@/commands';
 
 /**

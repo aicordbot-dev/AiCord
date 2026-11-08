@@ -38,6 +38,7 @@ export { CrushMatch } from './CrushMatch';
 export { ServerPet } from './ServerPet';
 export { UserTimezone } from './UserTimezone';
 export { AudioTranscript } from './AudioTranscript';
+export { GitSubscription } from './GitSubscription';
 
 export type { IGuildConfig } from './GuildConfig';
 export type { IBuildJob, BuildJobStatus, CreatedIds, BuildStep } from './BuildJob';
@@ -94,3 +95,4 @@ export type { ICrushMatch } from './CrushMatch';
 export type { IServerPet, PetSpecies, IPetStats } from './ServerPet';
 export type { IUserTimezone, IActiveHours } from './UserTimezone';
 export type { IAudioTranscript, TranscriptFormat } from './AudioTranscript';
+export type { IGitSubscription, GitProvider } from './GitSubscription';
