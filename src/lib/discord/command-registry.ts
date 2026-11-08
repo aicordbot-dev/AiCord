@@ -62,6 +62,7 @@ import { starboardCommand } from '@/commands/starboard';
 import { categoryCommand } from '@/commands/category';
 import { adventureCommand } from '@/commands/adventure';
 import { radioCommand } from '@/commands/radio';
+import { skinsCommand, unboxCommand } from '@/commands/skins';
 import {
   banCommand,
   kickCommand,
@@ -225,6 +226,7 @@ const STANDALONE_MOD_COMMAND_NAMES = new Set([
 ]);
 const ADVENTURE_COMMAND_NAMES = new Set(['adventure']);
 const RADIO_COMMAND_NAMES = new Set(['radio']);
+const SKINS_COMMAND_NAMES = new Set(['skins', 'unbox']);
 
 /**
  * Retrieve a registered command by its primary name.
@@ -281,6 +283,10 @@ export function getCommand(name: string): RegisteredCommand | undefined {
   }
   if (!cmd && RADIO_COMMAND_NAMES.has(name)) {
     registerRadioCommands();
+    cmd = registry.get(name);
+  }
+  if (!cmd && SKINS_COMMAND_NAMES.has(name)) {
+    registerSkinsCommands();
     cmd = registry.get(name);
   }
   return cmd;
@@ -424,6 +430,14 @@ export function registerRadioCommands(): void {
 }
 
 /**
+ * Register all Service 7 Skins & Cosmetics Unlocker / Mystery Lootbox commands into the registry.
+ */
+export function registerSkinsCommands(): void {
+  registerCommand(skinsCommand);
+  registerCommand(unboxCommand);
+}
+
+/**
  * Register all commands across all suites.
  */
 export function registerAllCommands(): void {
@@ -441,6 +455,9 @@ export function registerAllCommands(): void {
   registerStarboardCommands();
   registerCategoryCommands();
   registerStandaloneModCommands();
+  registerAdventureCommands();
+  registerRadioCommands();
+  registerSkinsCommands();
 }
 
 /**

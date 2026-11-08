@@ -43,6 +43,8 @@ export {
   purgeCommand,
   adventureCommand,
   radioCommand,
+  skinsCommand,
+  unboxCommand,
 } from '@/commands';
 
 /**

@@ -453,10 +453,24 @@ async function handleComponentAsync(
       await handleAdventureComponent(token, customId, userId, guildId, component);
       break;
     }
+    case 'skin_equip':
+    case 'skin_select':
+    case 'skin_wardrobe':
+    case 'skin_catalog':
+    case 'unbox_again': {
+      const { handleSkinsComponent } = await import('@/commands/skins');
+      await handleSkinsComponent(token, customId, userId, guildId, component);
+      break;
+    }
     default: {
       if (customId.startsWith('radio_')) {
         const { handleRadioComponent } = await import('@/commands/radio');
         await handleRadioComponent(token, customId, userId, guildId, component);
+        break;
+      }
+      if (customId.startsWith('skin_') || customId.startsWith('unbox_')) {
+        const { handleSkinsComponent } = await import('@/commands/skins');
+        await handleSkinsComponent(token, customId, userId, guildId, component);
         break;
       }
       console.warn(`[Interactions] Unknown component action: ${action}`);

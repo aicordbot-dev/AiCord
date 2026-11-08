@@ -26,6 +26,8 @@ export { StarboardConfig } from './StarboardConfig';
 export { StarboardMessage } from './StarboardMessage';
 export { AdventurePlayer } from './AdventurePlayer';
 export { RadioSession } from './RadioSession';
+export { SkinItem } from './SkinItem';
+export { UserSkins } from './UserSkins';
 
 export type { IGuildConfig } from './GuildConfig';
 export type { IBuildJob, BuildJobStatus, CreatedIds, BuildStep } from './BuildJob';
@@ -66,3 +68,5 @@ export type {
   RadioStatus,
   IRadioTrack,
 } from './RadioSession';
+export type { ISkinItem, SkinRarity, SkinType, ISkinItemDocument } from './SkinItem';
+export type { IUserSkins } from './UserSkins';
