@@ -484,10 +484,20 @@ async function handleComponentAsync(
       await handleConfessionComponent(token, customId, userId, guildId, component);
       break;
     }
+    case 'run_delete': {
+      const { handleCodeRunComponent } = await import('@/commands/run');
+      await handleCodeRunComponent(token, customId, userId, guildId, component);
+      break;
+    }
     default: {
       if (customId.startsWith('confess_')) {
         const { handleConfessionComponent } = await import('@/commands/confess');
         await handleConfessionComponent(token, customId, userId, guildId, component);
+        break;
+      }
+      if (customId.startsWith('run_')) {
+        const { handleCodeRunComponent } = await import('@/commands/run');
+        await handleCodeRunComponent(token, customId, userId, guildId, component);
         break;
       }
       if (customId.startsWith('bounty_')) {

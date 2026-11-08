@@ -28,9 +28,14 @@ type FollowUpHandler = (
   options: InteractionResponseOptions,
   appId?: string,
 ) => Promise<{ id: string }>;
+type DeleteHandler = (
+  token: string,
+  appId?: string,
+) => Promise<void>;
 
 let customResponseHandler: ResponseHandler | null = null;
 let customFollowUpHandler: FollowUpHandler | null = null;
+let customDeleteHandler: DeleteHandler | null = null;
 
 export function setResponseHandler(handler: ResponseHandler | null): void {
   customResponseHandler = handler;
@@ -38,6 +43,10 @@ export function setResponseHandler(handler: ResponseHandler | null): void {
 
 export function setFollowUpHandler(handler: FollowUpHandler | null): void {
   customFollowUpHandler = handler;
+}
+
+export function setDeleteHandler(handler: DeleteHandler | null): void {
+  customDeleteHandler = handler;
 }
 
 /**
@@ -142,6 +151,10 @@ export async function deleteInteractionResponse(
   interactionToken: string,
   appId?: string,
 ): Promise<void> {
+  if (customDeleteHandler) {
+    await customDeleteHandler(interactionToken, appId);
+    return;
+  }
   const targetAppId = resolveApplicationId(appId);
   const rest = getDiscordRest();
   await discordApiCall(() =>
@@ -150,6 +163,8 @@ export async function deleteInteractionResponse(
     }),
   );
 }
+
+export const deleteOriginalInteractionResponse = deleteInteractionResponse;
 
 /**
  * Delete a follow-up message or original interaction response.

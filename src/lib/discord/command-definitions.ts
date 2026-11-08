@@ -49,6 +49,7 @@ export {
   modmailCommand,
   bountyCommand,
   confessCommand,
+  runCommand,
 } from '@/commands';
 
 /**
