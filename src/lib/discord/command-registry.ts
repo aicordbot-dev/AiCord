@@ -66,6 +66,7 @@ import { skinsCommand, unboxCommand } from '@/commands/skins';
 import { giveawayCommand } from '@/commands/giveaway';
 import { modmailCommand } from '@/commands/modmail';
 import { bountyCommand } from '@/commands/bounty';
+import { confessCommand } from '@/commands/confess';
 import {
   banCommand,
   kickCommand,
@@ -233,6 +234,7 @@ const SKINS_COMMAND_NAMES = new Set(['skins', 'unbox']);
 const GIVEAWAY_COMMAND_NAMES = new Set(['giveaway']);
 const MODMAIL_COMMAND_NAMES = new Set(['modmail']);
 const BOUNTY_COMMAND_NAMES = new Set(['bounty']);
+const CONFESS_COMMAND_NAMES = new Set(['confess']);
 
 /**
  * Retrieve a registered command by its primary name.
@@ -305,6 +307,10 @@ export function getCommand(name: string): RegisteredCommand | undefined {
   }
   if (!cmd && BOUNTY_COMMAND_NAMES.has(name)) {
     registerBountyCommands();
+    cmd = registry.get(name);
+  }
+  if (!cmd && CONFESS_COMMAND_NAMES.has(name)) {
+    registerConfessionCommands();
     cmd = registry.get(name);
   }
   return cmd;
@@ -477,6 +483,13 @@ export function registerBountyCommands(): void {
 }
 
 /**
+ * Register all Anonymous Confessions & Mutual Matchmaker commands into the registry.
+ */
+export function registerConfessionCommands(): void {
+  registerCommand(confessCommand);
+}
+
+/**
  * Register all commands across all suites.
  */
 export function registerAllCommands(): void {
@@ -500,6 +513,7 @@ export function registerAllCommands(): void {
   registerGiveawayCommands();
   registerModmailCommands();
   registerBountyCommands();
+  registerConfessionCommands();
 }
 
 /**

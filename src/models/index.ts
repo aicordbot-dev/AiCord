@@ -32,6 +32,9 @@ export { Giveaway } from './Giveaway';
 export { ModmailConfig } from './ModmailConfig';
 export { ModmailThread } from './ModmailThread';
 export { Bounty } from './Bounty';
+export { Confession } from './Confession';
+export { ConfessionConfig } from './ConfessionConfig';
+export { CrushMatch } from './CrushMatch';
 
 export type { IGuildConfig } from './GuildConfig';
 export type { IBuildJob, BuildJobStatus, CreatedIds, BuildStep } from './BuildJob';
@@ -78,3 +81,10 @@ export type { IGiveaway, IGiveawayRequirements } from './Giveaway';
 export type { IModmailConfig, ICannedResponse } from './ModmailConfig';
 export type { IModmailThread, IModmailMessage, ModmailStatus } from './ModmailThread';
 export type { IBounty, BountyCategory, BountyStatus } from './Bounty';
+export type {
+  IConfession,
+  IConfessionVotes,
+  ConfessionStatus,
+} from './Confession';
+export type { IConfessionConfig } from './ConfessionConfig';
+export type { ICrushMatch } from './CrushMatch';

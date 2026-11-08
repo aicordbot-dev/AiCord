@@ -479,7 +479,17 @@ async function handleComponentAsync(
       await handleBountyComponent(token, customId, userId, guildId, component);
       break;
     }
+    case 'confess_vote': {
+      const { handleConfessionComponent } = await import('@/commands/confess');
+      await handleConfessionComponent(token, customId, userId, guildId, component);
+      break;
+    }
     default: {
+      if (customId.startsWith('confess_')) {
+        const { handleConfessionComponent } = await import('@/commands/confess');
+        await handleConfessionComponent(token, customId, userId, guildId, component);
+        break;
+      }
       if (customId.startsWith('bounty_')) {
         const { handleBountyComponent } = await import('@/commands/bounty');
         await handleBountyComponent(token, customId, userId, guildId, component);
