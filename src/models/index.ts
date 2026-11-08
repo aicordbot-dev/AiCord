@@ -25,6 +25,7 @@ export { BirthdayConfig } from './BirthdayConfig';
 export { StarboardConfig } from './StarboardConfig';
 export { StarboardMessage } from './StarboardMessage';
 export { AdventurePlayer } from './AdventurePlayer';
+export { RadioSession } from './RadioSession';
 
 export type { IGuildConfig } from './GuildConfig';
 export type { IBuildJob, BuildJobStatus, CreatedIds, BuildStep } from './BuildJob';
@@ -59,3 +60,9 @@ export type {
   AdventureItemType,
   AdventureDungeonState,
 } from './AdventurePlayer';
+export type {
+  IRadioSession,
+  RadioStationId,
+  RadioStatus,
+  IRadioTrack,
+} from './RadioSession';

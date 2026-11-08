@@ -42,6 +42,7 @@ export {
   warnCommand,
   purgeCommand,
   adventureCommand,
+  radioCommand,
 } from '@/commands';
 
 /**

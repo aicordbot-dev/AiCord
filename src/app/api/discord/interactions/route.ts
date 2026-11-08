@@ -439,12 +439,26 @@ async function handleComponentAsync(
       await handleReactionRoleComponent(token, customId, userId, guildId, component);
       break;
     }
+    case 'radio_toggle':
+    case 'radio_stop':
+    case 'radio_voldown':
+    case 'radio_volup':
+    case 'radio_select': {
+      const { handleRadioComponent } = await import('@/commands/radio');
+      await handleRadioComponent(token, customId, userId, guildId, component);
+      break;
+    }
     case 'adv_choice': {
       const { handleAdventureComponent } = await import('@/commands/adventure');
       await handleAdventureComponent(token, customId, userId, guildId, component);
       break;
     }
     default: {
+      if (customId.startsWith('radio_')) {
+        const { handleRadioComponent } = await import('@/commands/radio');
+        await handleRadioComponent(token, customId, userId, guildId, component);
+        break;
+      }
       console.warn(`[Interactions] Unknown component action: ${action}`);
     }
   }

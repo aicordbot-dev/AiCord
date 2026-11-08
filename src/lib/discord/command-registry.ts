@@ -61,6 +61,7 @@ import { reactionRoleCommand } from '@/commands/reaction-roles';
 import { starboardCommand } from '@/commands/starboard';
 import { categoryCommand } from '@/commands/category';
 import { adventureCommand } from '@/commands/adventure';
+import { radioCommand } from '@/commands/radio';
 import {
   banCommand,
   kickCommand,
@@ -223,6 +224,7 @@ const STANDALONE_MOD_COMMAND_NAMES = new Set([
   'purge',
 ]);
 const ADVENTURE_COMMAND_NAMES = new Set(['adventure']);
+const RADIO_COMMAND_NAMES = new Set(['radio']);
 
 /**
  * Retrieve a registered command by its primary name.
@@ -275,6 +277,10 @@ export function getCommand(name: string): RegisteredCommand | undefined {
   }
   if (!cmd && ADVENTURE_COMMAND_NAMES.has(name)) {
     registerAdventureCommands();
+    cmd = registry.get(name);
+  }
+  if (!cmd && RADIO_COMMAND_NAMES.has(name)) {
+    registerRadioCommands();
     cmd = registry.get(name);
   }
   return cmd;
@@ -408,6 +414,13 @@ export function registerStandaloneModCommands(): void {
  */
 export function registerAdventureCommands(): void {
   registerCommand(adventureCommand);
+}
+
+/**
+ * Register all Service 18 24/7 Voice Radio streamer commands into the registry.
+ */
+export function registerRadioCommands(): void {
+  registerCommand(radioCommand);
 }
 
 /**
@@ -707,3 +720,4 @@ export async function handleAutocompleteInteraction(
 // ─── Initialize Built-in Commands ─────────────────────────────────────────
 
 registerBuiltinCommands();
+
