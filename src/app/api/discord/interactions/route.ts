@@ -533,6 +533,11 @@ async function handleComponentAsync(
         await handleRadioComponent(token, customId, userId, guildId, component);
         break;
       }
+      if (customId.startsWith('tx_')) {
+        const { handleTranscribeComponent } = await import('@/commands/transcribe');
+        await handleTranscribeComponent(token, customId, userId, guildId, component);
+        break;
+      }
       if (customId.startsWith('skin_') || customId.startsWith('unbox_')) {
         const { handleSkinsComponent } = await import('@/commands/skins');
         await handleSkinsComponent(token, customId, userId, guildId, component);

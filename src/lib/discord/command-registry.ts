@@ -70,6 +70,7 @@ import { confessCommand } from '@/commands/confess';
 import { runCommand } from '@/commands/run';
 import { petCommand } from '@/commands/pet';
 import { worldclockCommand, meetCommand } from '@/commands/worldclock';
+import { transcribeCommand } from '@/commands/transcribe';
 import {
   banCommand,
   kickCommand,
@@ -241,6 +242,7 @@ const CONFESS_COMMAND_NAMES = new Set(['confess']);
 const SANDBOX_COMMAND_NAMES = new Set(['run']);
 const PET_COMMAND_NAMES = new Set(['pet']);
 const WORLDCLOCK_COMMAND_NAMES = new Set(['worldclock', 'meet']);
+const TRANSCRIBE_COMMAND_NAMES = new Set(['transcribe']);
 
 /**
  * Retrieve a registered command by its primary name.
@@ -325,6 +327,10 @@ export function getCommand(name: string): RegisteredCommand | undefined {
   }
   if (!cmd && WORLDCLOCK_COMMAND_NAMES.has(name)) {
     registerWorldClockCommands();
+    cmd = registry.get(name);
+  }
+  if (!cmd && TRANSCRIBE_COMMAND_NAMES.has(name)) {
+    registerTranscribeCommands();
     cmd = registry.get(name);
   }
   if (!cmd && SANDBOX_COMMAND_NAMES.has(name)) {
@@ -530,6 +536,13 @@ export function registerSandboxCommands(): void {
 }
 
 /**
+ * Register all Service 5 Gemini AI Audio Transcriber & Voice Note Summarizer commands into the registry.
+ */
+export function registerTranscribeCommands(): void {
+  registerCommand(transcribeCommand);
+}
+
+/**
  * Register all commands across all suites.
  */
 export function registerAllCommands(): void {
@@ -557,6 +570,7 @@ export function registerAllCommands(): void {
   registerSandboxCommands();
   registerPetCommands();
   registerWorldClockCommands();
+  registerTranscribeCommands();
 }
 
 /**

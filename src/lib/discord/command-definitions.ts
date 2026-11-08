@@ -53,6 +53,7 @@ export {
   petCommand,
   worldclockCommand,
   meetCommand,
+  transcribeCommand,
 } from '@/commands';
 
 /**
