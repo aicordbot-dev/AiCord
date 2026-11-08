@@ -28,3 +28,4 @@ export * from './bounty';
 export * from './confess';
 export * from './run';
 export * from './pet';
+export * from './worldclock';

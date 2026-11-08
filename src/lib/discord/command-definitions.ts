@@ -51,6 +51,8 @@ export {
   confessCommand,
   runCommand,
   petCommand,
+  worldclockCommand,
+  meetCommand,
 } from '@/commands';
 
 /**

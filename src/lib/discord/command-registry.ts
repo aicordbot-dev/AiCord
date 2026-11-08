@@ -69,6 +69,7 @@ import { bountyCommand } from '@/commands/bounty';
 import { confessCommand } from '@/commands/confess';
 import { runCommand } from '@/commands/run';
 import { petCommand } from '@/commands/pet';
+import { worldclockCommand, meetCommand } from '@/commands/worldclock';
 import {
   banCommand,
   kickCommand,
@@ -239,6 +240,7 @@ const BOUNTY_COMMAND_NAMES = new Set(['bounty']);
 const CONFESS_COMMAND_NAMES = new Set(['confess']);
 const SANDBOX_COMMAND_NAMES = new Set(['run']);
 const PET_COMMAND_NAMES = new Set(['pet']);
+const WORLDCLOCK_COMMAND_NAMES = new Set(['worldclock', 'meet']);
 
 /**
  * Retrieve a registered command by its primary name.
@@ -319,6 +321,10 @@ export function getCommand(name: string): RegisteredCommand | undefined {
   }
   if (!cmd && PET_COMMAND_NAMES.has(name)) {
     registerPetCommands();
+    cmd = registry.get(name);
+  }
+  if (!cmd && WORLDCLOCK_COMMAND_NAMES.has(name)) {
+    registerWorldClockCommands();
     cmd = registry.get(name);
   }
   if (!cmd && SANDBOX_COMMAND_NAMES.has(name)) {
@@ -509,6 +515,14 @@ export function registerPetCommands(): void {
 }
 
 /**
+ * Register all Service 4 World Clock & Meeting Overlap commands into the registry.
+ */
+export function registerWorldClockCommands(): void {
+  registerCommand(worldclockCommand);
+  registerCommand(meetCommand);
+}
+
+/**
  * Register all Service 2 Polyglot Code Sandbox Compiler commands into the registry.
  */
 export function registerSandboxCommands(): void {
@@ -542,6 +556,7 @@ export function registerAllCommands(): void {
   registerConfessionCommands();
   registerSandboxCommands();
   registerPetCommands();
+  registerWorldClockCommands();
 }
 
 /**

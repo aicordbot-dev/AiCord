@@ -36,6 +36,7 @@ export { Confession } from './Confession';
 export { ConfessionConfig } from './ConfessionConfig';
 export { CrushMatch } from './CrushMatch';
 export { ServerPet } from './ServerPet';
+export { UserTimezone } from './UserTimezone';
 
 export type { IGuildConfig } from './GuildConfig';
 export type { IBuildJob, BuildJobStatus, CreatedIds, BuildStep } from './BuildJob';
@@ -90,3 +91,4 @@ export type {
 export type { IConfessionConfig } from './ConfessionConfig';
 export type { ICrushMatch } from './CrushMatch';
 export type { IServerPet, PetSpecies, IPetStats } from './ServerPet';
+export type { IUserTimezone, IActiveHours } from './UserTimezone';
