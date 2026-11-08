@@ -50,6 +50,7 @@ export {
   bountyCommand,
   confessCommand,
   runCommand,
+  petCommand,
 } from '@/commands';
 
 /**

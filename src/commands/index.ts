@@ -27,3 +27,4 @@ export * from './modmail';
 export * from './bounty';
 export * from './confess';
 export * from './run';
+export * from './pet';

@@ -484,12 +484,25 @@ async function handleComponentAsync(
       await handleConfessionComponent(token, customId, userId, guildId, component);
       break;
     }
+    case 'pet_feed':
+    case 'pet_play':
+    case 'pet_train':
+    case 'pet_rest': {
+      const { handlePetComponent } = await import('@/commands/pet');
+      await handlePetComponent(token, customId, userId, guildId, component);
+      break;
+    }
     case 'run_delete': {
       const { handleCodeRunComponent } = await import('@/commands/run');
       await handleCodeRunComponent(token, customId, userId, guildId, component);
       break;
     }
     default: {
+      if (customId.startsWith('pet_')) {
+        const { handlePetComponent } = await import('@/commands/pet');
+        await handlePetComponent(token, customId, userId, guildId, component);
+        break;
+      }
       if (customId.startsWith('confess_')) {
         const { handleConfessionComponent } = await import('@/commands/confess');
         await handleConfessionComponent(token, customId, userId, guildId, component);

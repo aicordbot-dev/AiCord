@@ -68,6 +68,7 @@ import { modmailCommand } from '@/commands/modmail';
 import { bountyCommand } from '@/commands/bounty';
 import { confessCommand } from '@/commands/confess';
 import { runCommand } from '@/commands/run';
+import { petCommand } from '@/commands/pet';
 import {
   banCommand,
   kickCommand,
@@ -237,6 +238,7 @@ const MODMAIL_COMMAND_NAMES = new Set(['modmail']);
 const BOUNTY_COMMAND_NAMES = new Set(['bounty']);
 const CONFESS_COMMAND_NAMES = new Set(['confess']);
 const SANDBOX_COMMAND_NAMES = new Set(['run']);
+const PET_COMMAND_NAMES = new Set(['pet']);
 
 /**
  * Retrieve a registered command by its primary name.
@@ -313,6 +315,10 @@ export function getCommand(name: string): RegisteredCommand | undefined {
   }
   if (!cmd && CONFESS_COMMAND_NAMES.has(name)) {
     registerConfessionCommands();
+    cmd = registry.get(name);
+  }
+  if (!cmd && PET_COMMAND_NAMES.has(name)) {
+    registerPetCommands();
     cmd = registry.get(name);
   }
   if (!cmd && SANDBOX_COMMAND_NAMES.has(name)) {
@@ -498,6 +504,13 @@ export function registerConfessionCommands(): void {
 /**
  * Register all Service 2 Polyglot Code Sandbox Compiler commands into the registry.
  */
+export function registerPetCommands(): void {
+  registerCommand(petCommand);
+}
+
+/**
+ * Register all Service 2 Polyglot Code Sandbox Compiler commands into the registry.
+ */
 export function registerSandboxCommands(): void {
   registerCommand(runCommand);
 }
@@ -528,6 +541,7 @@ export function registerAllCommands(): void {
   registerBountyCommands();
   registerConfessionCommands();
   registerSandboxCommands();
+  registerPetCommands();
 }
 
 /**

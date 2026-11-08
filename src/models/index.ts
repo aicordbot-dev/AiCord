@@ -35,6 +35,7 @@ export { Bounty } from './Bounty';
 export { Confession } from './Confession';
 export { ConfessionConfig } from './ConfessionConfig';
 export { CrushMatch } from './CrushMatch';
+export { ServerPet } from './ServerPet';
 
 export type { IGuildConfig } from './GuildConfig';
 export type { IBuildJob, BuildJobStatus, CreatedIds, BuildStep } from './BuildJob';
@@ -88,3 +89,4 @@ export type {
 } from './Confession';
 export type { IConfessionConfig } from './ConfessionConfig';
 export type { ICrushMatch } from './CrushMatch';
+export type { IServerPet, PetSpecies, IPetStats } from './ServerPet';
