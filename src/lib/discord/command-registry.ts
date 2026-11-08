@@ -72,6 +72,7 @@ import { petCommand } from '@/commands/pet';
 import { worldclockCommand, meetCommand } from '@/commands/worldclock';
 import { transcribeCommand } from '@/commands/transcribe';
 import { gitCommand } from '@/commands/git';
+import { tempVcCommand } from '@/commands/temp-vc';
 import {
   banCommand,
   kickCommand,
@@ -245,6 +246,7 @@ const PET_COMMAND_NAMES = new Set(['pet']);
 const WORLDCLOCK_COMMAND_NAMES = new Set(['worldclock', 'meet']);
 const TRANSCRIBE_COMMAND_NAMES = new Set(['transcribe']);
 const GIT_COMMAND_NAMES = new Set(['git']);
+const TEMP_VC_COMMAND_NAMES = new Set(['temp-vc']);
 
 /**
  * Retrieve a registered command by its primary name.
@@ -337,6 +339,10 @@ export function getCommand(name: string): RegisteredCommand | undefined {
   }
   if (!cmd && GIT_COMMAND_NAMES.has(name)) {
     registerGitCommands();
+    cmd = registry.get(name);
+  }
+  if (!cmd && TEMP_VC_COMMAND_NAMES.has(name)) {
+    registerTempVoiceCommands();
     cmd = registry.get(name);
   }
   if (!cmd && SANDBOX_COMMAND_NAMES.has(name)) {
@@ -556,6 +562,13 @@ export function registerGitCommands(): void {
 }
 
 /**
+ * Register all Service 7 Dynamic Temporary Auto-Voice Rooms commands into the registry.
+ */
+export function registerTempVoiceCommands(): void {
+  registerCommand(tempVcCommand);
+}
+
+/**
  * Register all commands across all suites.
  */
 export function registerAllCommands(): void {
@@ -585,6 +598,7 @@ export function registerAllCommands(): void {
   registerWorldClockCommands();
   registerTranscribeCommands();
   registerGitCommands();
+  registerTempVoiceCommands();
 }
 
 /**

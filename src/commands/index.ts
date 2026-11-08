@@ -31,3 +31,4 @@ export * from './pet';
 export * from './worldclock';
 export * from './transcribe';
 export * from './git';
+export * from './temp-vc';

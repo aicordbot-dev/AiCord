@@ -39,6 +39,8 @@ export { ServerPet } from './ServerPet';
 export { UserTimezone } from './UserTimezone';
 export { AudioTranscript } from './AudioTranscript';
 export { GitSubscription } from './GitSubscription';
+export { TempVoiceConfig } from './TempVoiceConfig';
+export { TempVoiceRoom } from './TempVoiceRoom';
 
 export type { IGuildConfig } from './GuildConfig';
 export type { IBuildJob, BuildJobStatus, CreatedIds, BuildStep } from './BuildJob';
@@ -96,3 +98,5 @@ export type { IServerPet, PetSpecies, IPetStats } from './ServerPet';
 export type { IUserTimezone, IActiveHours } from './UserTimezone';
 export type { IAudioTranscript, TranscriptFormat } from './AudioTranscript';
 export type { IGitSubscription, GitProvider } from './GitSubscription';
+export type { ITempVoiceConfig } from './TempVoiceConfig';
+export type { ITempVoiceRoom } from './TempVoiceRoom';

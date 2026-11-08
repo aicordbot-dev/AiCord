@@ -55,6 +55,7 @@ export {
   meetCommand,
   transcribeCommand,
   gitCommand,
+  tempVcCommand,
 } from '@/commands';
 
 /**

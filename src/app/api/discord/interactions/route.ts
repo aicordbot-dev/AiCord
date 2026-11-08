@@ -543,6 +543,11 @@ async function handleComponentAsync(
         await handleSkinsComponent(token, customId, userId, guildId, component);
         break;
       }
+      if (customId.startsWith('tvc_')) {
+        const { handleTempVoiceComponent } = await import('@/commands/temp-vc');
+        await handleTempVoiceComponent(token, customId, userId, guildId, component);
+        break;
+      }
       console.warn(`[Interactions] Unknown component action: ${action}`);
     }
   }
