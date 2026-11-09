@@ -74,6 +74,7 @@ import { transcribeCommand } from '@/commands/transcribe';
 import { gitCommand } from '@/commands/git';
 import { tempVcCommand } from '@/commands/temp-vc';
 import { quizCommand } from '@/commands/quiz';
+import { countdownCommand } from '@/commands/countdown';
 import {
   banCommand,
   kickCommand,
@@ -249,6 +250,7 @@ const TRANSCRIBE_COMMAND_NAMES = new Set(['transcribe']);
 const GIT_COMMAND_NAMES = new Set(['git']);
 const TEMP_VC_COMMAND_NAMES = new Set(['temp-vc']);
 const QUIZ_COMMAND_NAMES = new Set(['quiz']);
+const COUNTDOWN_COMMAND_NAMES = new Set(['countdown']);
 
 /**
  * Retrieve a registered command by its primary name.
@@ -349,6 +351,10 @@ export function getCommand(name: string): RegisteredCommand | undefined {
   }
   if (!cmd && QUIZ_COMMAND_NAMES.has(name)) {
     registerQuizCommands();
+    cmd = registry.get(name);
+  }
+  if (!cmd && COUNTDOWN_COMMAND_NAMES.has(name)) {
+    registerCountdownCommands();
     cmd = registry.get(name);
   }
   if (!cmd && SANDBOX_COMMAND_NAMES.has(name)) {
@@ -582,6 +588,13 @@ export function registerQuizCommands(): void {
 }
 
 /**
+ * Register all Service 9 Dynamic Real-Time Event Countdown Clocks commands into the registry.
+ */
+export function registerCountdownCommands(): void {
+  registerCommand(countdownCommand);
+}
+
+/**
  * Register all commands across all suites.
  */
 export function registerAllCommands(): void {
@@ -613,6 +626,7 @@ export function registerAllCommands(): void {
   registerGitCommands();
   registerTempVoiceCommands();
   registerQuizCommands();
+  registerCountdownCommands();
 }
 
 /**

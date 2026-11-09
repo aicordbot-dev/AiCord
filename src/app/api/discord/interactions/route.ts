@@ -502,10 +502,20 @@ async function handleComponentAsync(
       await handleQuizComponent(token, customId, userId, guildId, component);
       break;
     }
+    case 'cd_refresh': {
+      const { handleCountdownComponent } = await import('@/commands/countdown');
+      await handleCountdownComponent(token, customId, userId, guildId, component);
+      break;
+    }
     default: {
       if (customId.startsWith('quiz_')) {
         const { handleQuizComponent } = await import('@/commands/quiz');
         await handleQuizComponent(token, customId, userId, guildId, component);
+        break;
+      }
+      if (customId.startsWith('cd_')) {
+        const { handleCountdownComponent } = await import('@/commands/countdown');
+        await handleCountdownComponent(token, customId, userId, guildId, component);
         break;
       }
       if (customId.startsWith('pet_')) {

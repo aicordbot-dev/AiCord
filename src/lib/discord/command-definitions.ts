@@ -57,6 +57,7 @@ export {
   gitCommand,
   tempVcCommand,
   quizCommand,
+  countdownCommand,
 } from '@/commands';
 
 /**
