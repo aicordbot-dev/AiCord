@@ -41,6 +41,8 @@ export { AudioTranscript } from './AudioTranscript';
 export { GitSubscription } from './GitSubscription';
 export { TempVoiceConfig } from './TempVoiceConfig';
 export { TempVoiceRoom } from './TempVoiceRoom';
+export { QuizSession } from './QuizSession';
+export { QuizLeaderboard } from './QuizLeaderboard';
 
 export type { IGuildConfig } from './GuildConfig';
 export type { IBuildJob, BuildJobStatus, CreatedIds, BuildStep } from './BuildJob';
@@ -100,3 +102,11 @@ export type { IAudioTranscript, TranscriptFormat } from './AudioTranscript';
 export type { IGitSubscription, GitProvider } from './GitSubscription';
 export type { ITempVoiceConfig } from './TempVoiceConfig';
 export type { ITempVoiceRoom } from './TempVoiceRoom';
+export type {
+  IQuizSession,
+  QuizStatus,
+  IQuizQuestion,
+  IQuizScore,
+  IQuizRoundAnswer,
+} from './QuizSession';
+export type { IQuizLeaderboard } from './QuizLeaderboard';

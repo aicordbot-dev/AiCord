@@ -73,6 +73,7 @@ import { worldclockCommand, meetCommand } from '@/commands/worldclock';
 import { transcribeCommand } from '@/commands/transcribe';
 import { gitCommand } from '@/commands/git';
 import { tempVcCommand } from '@/commands/temp-vc';
+import { quizCommand } from '@/commands/quiz';
 import {
   banCommand,
   kickCommand,
@@ -247,6 +248,7 @@ const WORLDCLOCK_COMMAND_NAMES = new Set(['worldclock', 'meet']);
 const TRANSCRIBE_COMMAND_NAMES = new Set(['transcribe']);
 const GIT_COMMAND_NAMES = new Set(['git']);
 const TEMP_VC_COMMAND_NAMES = new Set(['temp-vc']);
+const QUIZ_COMMAND_NAMES = new Set(['quiz']);
 
 /**
  * Retrieve a registered command by its primary name.
@@ -343,6 +345,10 @@ export function getCommand(name: string): RegisteredCommand | undefined {
   }
   if (!cmd && TEMP_VC_COMMAND_NAMES.has(name)) {
     registerTempVoiceCommands();
+    cmd = registry.get(name);
+  }
+  if (!cmd && QUIZ_COMMAND_NAMES.has(name)) {
+    registerQuizCommands();
     cmd = registry.get(name);
   }
   if (!cmd && SANDBOX_COMMAND_NAMES.has(name)) {
@@ -569,6 +575,13 @@ export function registerTempVoiceCommands(): void {
 }
 
 /**
+ * Register all Service 8 Live Multiplayer Kahoot-Style Quiz Show commands into the registry.
+ */
+export function registerQuizCommands(): void {
+  registerCommand(quizCommand);
+}
+
+/**
  * Register all commands across all suites.
  */
 export function registerAllCommands(): void {
@@ -599,6 +612,7 @@ export function registerAllCommands(): void {
   registerTranscribeCommands();
   registerGitCommands();
   registerTempVoiceCommands();
+  registerQuizCommands();
 }
 
 /**

@@ -497,7 +497,17 @@ async function handleComponentAsync(
       await handleCodeRunComponent(token, customId, userId, guildId, component);
       break;
     }
+    case 'quiz_ans': {
+      const { handleQuizComponent } = await import('@/commands/quiz');
+      await handleQuizComponent(token, customId, userId, guildId, component);
+      break;
+    }
     default: {
+      if (customId.startsWith('quiz_')) {
+        const { handleQuizComponent } = await import('@/commands/quiz');
+        await handleQuizComponent(token, customId, userId, guildId, component);
+        break;
+      }
       if (customId.startsWith('pet_')) {
         const { handlePetComponent } = await import('@/commands/pet');
         await handlePetComponent(token, customId, userId, guildId, component);
