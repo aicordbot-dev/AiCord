@@ -3,13 +3,14 @@
 /**
  * src/lib/lenis-provider.tsx
  * Lenis Smooth Scroll + GSAP ScrollTrigger synchronization provider.
- * Exact integration per specification.
+ * Integrates with useScrollStore for 3D camera and shader sync.
  */
 
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import Lenis from 'lenis';
 import { gsap, ScrollTrigger } from './gsap';
 import { useThemeStore } from './theme-store';
+import { useScrollStore } from './scroll-store';
 
 interface LenisContextType {
   lenis: Lenis | null;
@@ -56,9 +57,23 @@ export function LenisProvider({ children }: LenisProviderProps) {
       if (lenisRef.current) {
         lenisRef.current.destroy();
         lenisRef.current = null;
-        setLenisInstance(null);
+        queueMicrotask(() => {
+          setLenisInstance(null);
+        });
       }
-      return;
+
+      // Native scroll listener for scroll-store fallback
+      const handleNativeScroll = () => {
+        const doc = document.documentElement;
+        const total = doc.scrollHeight - window.innerHeight;
+        const progress = total > 0 ? window.scrollY / total : 0;
+        useScrollStore.getState().setProgress(progress);
+      };
+
+      window.addEventListener('scroll', handleNativeScroll, { passive: true });
+      return () => {
+        window.removeEventListener('scroll', handleNativeScroll);
+      };
     }
 
     const lenis = new Lenis({
@@ -74,11 +89,23 @@ export function LenisProvider({ children }: LenisProviderProps) {
     });
 
     lenisRef.current = lenis;
-    setLenisInstance(lenis);
+    queueMicrotask(() => {
+      setLenisInstance(lenis);
+    });
 
     // Exact required integration:
-    // 1. Tell ScrollTrigger to update on Lenis scroll
-    lenis.on('scroll', ScrollTrigger.update);
+    // 1. Tell ScrollTrigger to update on Lenis scroll & sync scroll-store
+    const handleScroll = (e: { progress: number; velocity: number }) => {
+      ScrollTrigger.update();
+      if (typeof e.progress === 'number') {
+        useScrollStore.getState().setProgress(e.progress);
+      }
+      if (typeof e.velocity === 'number') {
+        useScrollStore.getState().setVelocity(e.velocity);
+      }
+    };
+
+    lenis.on('scroll', handleScroll);
 
     // 2. Drive Lenis through GSAP's ticker
     const tickerCallback = (time: number) => {
@@ -94,7 +121,9 @@ export function LenisProvider({ children }: LenisProviderProps) {
       gsap.ticker.remove(tickerCallback);
       lenis.destroy();
       lenisRef.current = null;
-      setLenisInstance(null);
+      queueMicrotask(() => {
+        setLenisInstance(null);
+      });
     };
   }, [reducedMotion]);
 
@@ -133,3 +162,5 @@ export function LenisProvider({ children }: LenisProviderProps) {
     </LenisContext.Provider>
   );
 }
+
+export default LenisProvider;

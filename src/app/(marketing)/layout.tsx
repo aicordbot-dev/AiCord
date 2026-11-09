@@ -3,12 +3,14 @@
 /**
  * src/app/(marketing)/layout.tsx
  * Marketing Layout containing Lenis Smooth Scroll Provider, Navigation Header,
- * Main Viewport, and Platform Footer with verified tech stack and sample data notices.
+ * Main Viewport, Persistent 3D WebGL Scene, and Platform Footer with verified tech stack.
  */
 
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { LenisProvider } from '@/lib/lenis-provider';
+import { useGpuTier } from '@/lib/use-gpu-tier';
+import { Scene } from '@/components/three/Scene';
 import { ThemePicker } from '@/components/ui/ThemePicker';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -26,6 +28,9 @@ export default function MarketingLayout({
   const [soundEnabled, setSoundEnabled] = useState(false);
   const [permissionType, setPermissionType] = useState<'admin' | 'recommended'>('admin');
 
+  // Detect and synchronize GPU capability tier on mount
+  useGpuTier();
+
   const inviteUrl = siteConfig.getInviteUrl(
     permissionType === 'admin' ? '8' : '534723950656'
   );
@@ -33,10 +38,15 @@ export default function MarketingLayout({
   return (
     <LenisProvider>
       <div className="min-h-screen bg-[#070913] text-gray-100 relative overflow-hidden flex flex-col">
+        {/* ─── Persistent 3D WebGL Background Scene ────────────────────────────── */}
+        <div className="fixed inset-0 pointer-events-none z-0">
+          <Scene />
+        </div>
+
         {/* ─── Ambient Glow Blobs ────────────────────────────────────────────────── */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-gradient-to-b from-cyan-600/15 via-purple-600/10 to-transparent blur-[140px] pointer-events-none" />
-        <div className="absolute top-[800px] -left-64 w-[500px] h-[500px] bg-purple-600/10 blur-[150px] pointer-events-none" />
-        <div className="absolute top-[1800px] -right-64 w-[500px] h-[500px] bg-cyan-600/10 blur-[150px] pointer-events-none" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-gradient-to-b from-cyan-600/10 via-purple-600/5 to-transparent blur-[140px] pointer-events-none z-0" />
+        <div className="absolute top-[800px] -left-64 w-[500px] h-[500px] bg-purple-600/5 blur-[150px] pointer-events-none z-0" />
+        <div className="absolute top-[1800px] -right-64 w-[500px] h-[500px] bg-cyan-600/5 blur-[150px] pointer-events-none z-0" />
 
         {/* ─── Navigation Header ────────────────────────────────────────────────── */}
         <header className="sticky top-0 z-40 w-full backdrop-blur-xl bg-[#070913]/80 border-b border-white/10">
@@ -238,13 +248,13 @@ export default function MarketingLayout({
                     p-3.5 rounded-xl border cursor-pointer transition-all
                     ${
                       permissionType === 'admin'
-                        ? 'bg-cyan-500/20 border-cyan-500/50 text-white'
-                        : 'bg-white/5 border-white/10 text-gray-400 hover:border-white/20'
+                        ? 'border-cyan-500 bg-cyan-500/10 text-white'
+                        : 'border-white/10 bg-white/5 text-gray-400 hover:border-white/20'
                     }
                   `}
                 >
                   <div className="flex items-center justify-between font-bold">
-                    <span>👑 Administrator (Recommended)</span>
+                    <span>👑 Administrator (Full Sync)</span>
                     <span className="text-[10px] text-cyan-400">permissions=8</span>
                   </div>
                   <p className="text-[11px] text-gray-400 font-sans mt-1">
@@ -258,8 +268,8 @@ export default function MarketingLayout({
                     p-3.5 rounded-xl border cursor-pointer transition-all
                     ${
                       permissionType === 'recommended'
-                        ? 'bg-cyan-500/20 border-cyan-500/50 text-white'
-                        : 'bg-white/5 border-white/10 text-gray-400 hover:border-white/20'
+                        ? 'border-cyan-500 bg-cyan-500/10 text-white'
+                        : 'border-white/10 bg-white/5 text-gray-400 hover:border-white/20'
                     }
                   `}
                 >
