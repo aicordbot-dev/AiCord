@@ -12,6 +12,7 @@ import { LenisProvider } from '@/lib/lenis-provider';
 import { ThemePicker } from '@/components/ui/ThemePicker';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { UserNav } from '@/components/navbar/UserNav';
 import { siteConfig } from '@/config/site';
 import { copyConfig } from '@/config/copy';
 import { statsConfig } from '@/config/stats';
@@ -81,15 +82,8 @@ export default function MarketingLayout({
               {/* In-Navbar Theme Switcher */}
               <ThemePicker variant="navbar" />
 
-              {/* Login with Discord */}
-              <Button
-                variant="ghost"
-                size="sm"
-                href="/api/auth/signin"
-                className="hidden sm:inline-flex"
-              >
-                Login
-              </Button>
+              {/* User Session Nav */}
+              <UserNav />
 
               {/* Add to Discord CTA */}
               <Button

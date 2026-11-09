@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
+import { SessionProvider } from '@/components/auth/SessionProvider';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -53,7 +54,7 @@ export default function RootLayout({
       data-theme="cyberpunk"
     >
       <body className="bg-[#070913] text-gray-100 min-h-screen antialiased selection:bg-cyan-500 selection:text-black font-sans bg-blueprint-grid">
-        {children}
+        <SessionProvider>{children}</SessionProvider>
       </body>
     </html>
   );

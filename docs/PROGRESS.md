@@ -10,6 +10,7 @@
 | P3 | Moderation | todo | |
 | P4 | /ai management | todo | |
 | P5 | Dashboard | todo | |
+| Phase B | Auth & Guild Access | done | Complete Discord OAuth2 (Auth.js v5 beta) authentication, encrypted JWT refresh rotation with concurrency lock, server-side guild permissions engine (canManageGuild 0x8 / 0x20), Next.js 16 proxy request interceptor, open-redirect defense, 3D card guild picker, invite completion polling, server console access gating with requireGuildAccess, and demo mode. 34 new unit tests (1,538 total passing tests). |
 | P6 | Worker | todo | |
 | P7 | Server-Wide Subscriptions & Entitlements (Milestone 2) | done | Server-wide subscription entitlement engine, multi-tier matrix (Free, Pro, Ultimate, Lifetime), HMAC-signed cryptographic license keys, double-redemption prevention, expiration checks, granular feature gating across all bot commands, and interactive /premium command with tab navigation, tier comparison matrix, and instant key redemption. 452 passing unit tests. 0 typecheck errors. |
 | P23 | Levels | done | Comprehensive Levels & XP Progression System & Automated Role Rewards: MongoDB models (UserLevel, LevelConfig), quadratic XP progression formula (XP = 5*N^2 + 50*N + 100), visual rank cards with custom progress bar rendering, server XP leaderboard with medal badges (🥇, 🥈, 🥉), TemplateEngine-integrated level-up announcements, 60s anti-spam sliding-window cooldown, ignored channels/roles, XP multipliers, automated role rewards on level thresholds, slash commands (/rank, /leaderboard, /level-rewards, /level-config) registered under category 'levels', and component webhook pagination routing. 254 unit tests passing (47 new tests). 0 typecheck errors, 0 lint warnings. |
@@ -135,4 +136,50 @@
 - **Webhook Patch Authentication (`{ auth: false }`)**: Resolved Discord REST 401 Unauthorized errors during interaction response edits and follow-ups. Discord interaction webhook endpoints (`/webhooks/:application_id/:interaction_token/messages/@original`) are authenticated by the interaction token itself and reject `Bot <token>` Authorization headers. Explicitly passed `{ auth: false }` to `@discordjs/rest` PATCH, POST, and DELETE calls across `editInteractionResponse`, `sendFollowUp`, `deleteInteractionResponse`, and `deleteFollowupMessage`.
 - **Lambda Timeout Configuration (`maxDuration = 60`)**: Exported `export const maxDuration = 60;` in `src/app/api/discord/interactions/route.ts` to provide up to 60 seconds of execution headroom on Vercel Serverless Functions, comfortably accommodating multi-step operations such as AI blueprint generation, database synchronization, and Discord API creation calls.
 - **Resilient App ID & Bot Token Resolution**: Implemented prioritized fallback resolution in `resolveApplicationId(appId)` (`interaction.application_id` → `process.env.DISCORD_APP_ID` → `process.env.DISCORD_CLIENT_ID` → safe `env.DISCORD_APP_ID` try/catch) and `resolveBotToken()` (`env.DISCORD_BOT_TOKEN` → `process.env.DISCORD_BOT_TOKEN`) so webhook routing and REST clients never fail from missing or unvalidated environment schema wrappers during cold starts.
+
+## Phase B: Auth and Guild Access Engine (Complete)
+
+### 1. Auth.js (NextAuth v5 beta) Configuration
+- **Discord Provider**: Configured with minimal least-privilege scopes strictly: `identify guilds` (no email or member reads).
+- **Session Strategy**: Pure `jwt` with `trustHost: true`, `httpOnly`, `sameSite: 'lax'`, and `secure` in production.
+- **Zero Token Leakage Guarantee**: `accessToken` and `refreshToken` are stored exclusively in encrypted JWT cookies and server-side token store; never exposed to client-side session payloads, console logs, or error responses.
+- **Client Session Shape**: Strictly sanitized to `user.id`, `user.name`, `user.global_name`, `user.image` (avatar URL), and `isAdminOfAppOwner` boolean flag.
+- **Automatic Token Refresh Rotation**: Concurrent mutex lock prevents colliding Discord refresh token exchanges; sets `RefreshTokenError` on revocation to trigger clean sign-out.
+- **Route Handlers**: `src/app/api/auth/[...nextauth]/route.ts` exporting `{ GET, POST }`.
+
+### 2. Open-Redirect Protection & Next.js 16 Request Interception
+- **`getSafeCallbackUrl` (`src/lib/safe-redirect.ts`)**: Pure validation function rejecting protocol-relative URLs (`//`), backslash variations (`/\`, `\/`, `\\`), non-http schemes (`javascript:`, `data:`), control characters, and header injection vectors.
+- **Next.js 16 Request Interceptor (`src/proxy.ts`)**: Employs Next.js 16's standard `proxy.ts` convention, protecting all routes under `/dashboard/:path*` while avoiding deprecated `middleware.ts` warnings. Unauthenticated requests are safely redirected to `/login?callbackUrl=...`.
+
+### 3. Server-Side Guild Permission & Access Gate
+- **`canManageGuild` (`src/lib/discord/permissions.ts`)**: Evaluates `owner === true` or bitwise `MANAGE_GUILD` (`0x20n` / 32) or `ADMINISTRATOR` (`0x8n` / 8). Safely parses string, number, bigint, and null/undefined without throwing.
+- **`requireGuildAccess` (`src/lib/discord/require-guild-access.ts`)**: Server-side access guard enforcing session validity, guild management authority, and bot presence before permitting console entry.
+- **Typed Error Hierarchy (`src/lib/discord/errors.ts`)**: `UnauthenticatedError` (401), `ForbiddenError` (403), `BotNotInGuildError` (403), `RateLimitedError` (429).
+- **In-Memory Guild Cache (`src/lib/discord/cache.ts`)**: 60s TTL LRU cache preventing duplicate `/users/@me/guilds` Discord API requests.
+- **Bot Presence Provider (`src/lib/discord/bot-guilds.ts`)**: REST client with 60s cache and mock provider for demo/test environments.
+- **Bot Invite Link Generator (`src/lib/discord/invite.ts`)**: Formats standard Discord bot authorization URLs with least-privilege permissions and automated return redirect.
+
+### 4. Demo Mode & Production Safeguards (`src/lib/demo-mode.ts`)
+- Returns true only when `NEXT_PUBLIC_DEMO_MODE === 'true'` and `NODE_ENV !== 'production'`.
+- Production hard-stop safeguard: Immediately throws fatal exception on startup/build if demo mode is accidentally enabled in production.
+- Provides mock user identity (`Alex#0001`) and 4 mock guilds (2 Ready servers, 2 pending invite servers).
+
+### 5. Branded UI & Guild Console Views
+- **/login (`src/app/login/page.tsx`)**: Branded dark glass card with AiCord bot emblem, Discord OAuth sign-in button, granular permission explanation (`identify` + `guilds`), security guarantees, and polite error banners.
+- **/privacy (`src/app/privacy/page.tsx`)**: Transparent data policy detailing scopes, encrypted token storage, and GDPR compliance.
+- **Navbar User State (`src/components/navbar/UserNav.tsx`)**: Dynamic dropdown menu displaying user avatar/name with links to Dashboard, Switch Server, Billing, and clean Sign Out.
+- **/dashboard (`src/app/(dashboard)/dashboard/page.tsx`)**: 3D-feeling interactive guild picker organizing servers into "Ready" and "Add AiCord" sections, search filtering, and rate-limited refresh.
+- **/dashboard/invite-complete (`src/app/(dashboard)/dashboard/invite-complete/page.tsx`)**: Landing page polling bot presence for up to 10 seconds following invite, showing radar ping animation and auto-redirecting on join.
+- **/dashboard/[guildId] (`src/app/(dashboard)/dashboard/[guildId]/page.tsx` & layout)**: Server-side gated console layout displaying server avatar, verified authority badge, bot status, and connection audit diagnostics.
+
+### 6. Test Suite & Build Verification
+- **1,538 Passing Unit Tests**: 34 dedicated tests across 5 new suites in `test/auth/`:
+  - `test/auth/permissions.test.ts` (8 tests)
+  - `test/auth/safe-redirect.test.ts` (7 tests)
+  - `test/auth/demo-mode.test.ts` (6 tests)
+  - `test/auth/guild-cache.test.ts` (6 tests)
+  - `test/auth/require-guild-access.test.ts` (7 tests)
+- **Zero Typecheck Errors**: `tsc --noEmit` passes with 0 errors.
+- **Clean Next.js 16 Production Build**: `next build` compiles all 15 routes with 0 errors and 0 warnings.
+
 

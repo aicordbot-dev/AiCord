@@ -130,3 +130,31 @@ export function buildPermissions(...flags: PermissionFlag[]): string {
   }
   return bits.toString();
 }
+
+/**
+ * Checks whether a user has authority to manage a guild in the AiCord platform.
+ * Returns true if:
+ * 1. User is the guild owner (`owner === true`)
+ * 2. User has the `MANAGE_GUILD` permission (0x20n = bit 5)
+ * 3. User has the `ADMINISTRATOR` permission (0x8n = bit 3)
+ *
+ * Handles string, number, bigint, null, and undefined without throwing.
+ */
+export function canManageGuild(guild?: {
+  permissions?: string | number | bigint;
+  owner?: boolean;
+} | null): boolean {
+  if (!guild) return false;
+  if (guild.owner === true) return true;
+  if (guild.permissions === undefined || guild.permissions === null) return false;
+
+  try {
+    const perms = BigInt(guild.permissions);
+    const MANAGE_GUILD = 0x20n;
+    const ADMINISTRATOR = 0x8n;
+    return (perms & MANAGE_GUILD) !== 0n || (perms & ADMINISTRATOR) !== 0n;
+  } catch {
+    return false;
+  }
+}
+
