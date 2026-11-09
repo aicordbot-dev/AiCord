@@ -360,7 +360,11 @@ export function CommandPalette() {
       }
     };
 
-    const handleCustomOpen = () => {
+    const handleCustomOpen = (e?: Event) => {
+      const detail = (e as CustomEvent<{ query?: string }>)?.detail;
+      if (detail && typeof detail.query === 'string') {
+        setQuery(detail.query);
+      }
       setIsOpen(true);
     };
 
@@ -601,8 +605,8 @@ export function CommandPalette() {
 /**
  * Trigger helper to open the command palette programmatically from anywhere.
  */
-export function openCommandPalette(): void {
+export function openCommandPalette(query?: string): void {
   if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('aicord-open-palette'));
+    window.dispatchEvent(new CustomEvent('aicord-open-palette', { detail: { query } }));
   }
 }
