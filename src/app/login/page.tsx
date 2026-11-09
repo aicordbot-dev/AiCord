@@ -11,10 +11,9 @@ import {
   Lock,
   ArrowRight,
   AlertCircle,
-  Sparkles,
-  Bot,
 } from 'lucide-react';
 import { getSafeCallbackUrl } from '@/lib/safe-redirect';
+import { AiCordMark } from '@/components/brand/AiCordMark';
 
 function LoginContent() {
   const searchParams = useSearchParams();
@@ -71,8 +70,8 @@ function LoginContent() {
             href="/"
             className="inline-flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-white/[0.04] border border-white/10 hover:border-cyan-500/30 transition-all group backdrop-blur-md"
           >
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-400 to-blue-600 flex items-center justify-center text-white shadow-lg shadow-cyan-500/20 group-hover:scale-105 transition-transform">
-              <Bot className="w-5 h-5" />
+            <div className="w-8 h-8 shrink-0 shadow-lg shadow-cyan-500/20 group-hover:scale-105 transition-transform">
+              <AiCordMark size={32} variant="tile" />
             </div>
             <span className="font-mono text-sm tracking-wider font-bold text-gray-200">
               AiCord // ACCESS GATEWAY

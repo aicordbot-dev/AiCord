@@ -2,9 +2,9 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Bot } from 'lucide-react';
 import { ThemePicker } from '@/components/ui/ThemePicker';
 import { UserNav } from '@/components/navbar/UserNav';
+import { AiCordMark } from '@/components/brand/AiCordMark';
 import { siteConfig } from '@/config/site';
 
 export default function DashboardLayout({
@@ -22,12 +22,12 @@ export default function DashboardLayout({
             href="/dashboard"
             className="flex items-center gap-2.5 text-gray-200 hover:text-white transition-colors group"
           >
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-cyan-500/20 group-hover:scale-105 transition-transform">
-              <Bot className="w-5 h-5" />
+            <div className="w-8 h-8 shrink-0 shadow-md shadow-cyan-500/20 group-hover:scale-105 transition-transform">
+              <AiCordMark size={32} variant="tile" />
             </div>
             <div>
               <span className="font-extrabold tracking-tight font-mono text-base">
-                {siteConfig.name}
+                <span className="text-[#22D3EE]">Ai</span>Cord
               </span>
               <span className="text-[10px] font-mono text-cyan-400 block -mt-1 tracking-wider uppercase">
                 Console // v{siteConfig.version}

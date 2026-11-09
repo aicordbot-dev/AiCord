@@ -17,6 +17,7 @@ import { GlassCard } from '@/components/ui/GlassCard';
 import { Badge } from '@/components/ui/Badge';
 import { Counter } from '@/components/ui/Counter';
 import { ThemePicker } from '@/components/ui/ThemePicker';
+import { AiCordMark } from '@/components/brand/AiCordMark';
 
 export default function MarketingPage() {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
@@ -62,7 +63,7 @@ export default function MarketingPage() {
                 size="lg"
                 href={siteConfig.getInviteUrl()}
                 external
-                icon={<span>🤖</span>}
+                icon={<AiCordMark size={20} variant="transparent" />}
                 className="w-full sm:w-auto"
               >
                 {copyConfig.hero.ctaPrimary}

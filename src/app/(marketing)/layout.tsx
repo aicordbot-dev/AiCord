@@ -15,6 +15,7 @@ import { ThemePicker } from '@/components/ui/ThemePicker';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { UserNav } from '@/components/navbar/UserNav';
+import { AiCordMark } from '@/components/brand/AiCordMark';
 import { siteConfig } from '@/config/site';
 import { copyConfig } from '@/config/copy';
 import { statsConfig } from '@/config/stats';
@@ -53,14 +54,12 @@ export default function MarketingLayout({
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
             {/* Brand Logo */}
             <Link href="/" className="flex items-center gap-3 group shrink-0">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 via-blue-600 to-purple-600 p-0.5 shadow-lg shadow-cyan-500/20 group-hover:shadow-cyan-500/40 transition-all duration-300">
-                <div className="w-full h-full bg-[#070913] rounded-[10px] flex items-center justify-center text-xl">
-                  🤖
-                </div>
+              <div className="w-10 h-10 shrink-0 shadow-lg shadow-cyan-500/20 group-hover:shadow-cyan-500/40 transition-all duration-300 group-hover:scale-105">
+                <AiCordMark size={40} variant="tile" />
               </div>
               <div>
                 <span className="text-xl font-extrabold tracking-tight text-white flex items-center gap-1.5 font-mono">
-                  {siteConfig.name}
+                  <span className="text-[#22D3EE]">Ai</span>Cord
                   <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
                     v{siteConfig.version}
                   </span>
@@ -117,12 +116,12 @@ export default function MarketingLayout({
             <div className="flex flex-col md:flex-row items-center justify-between gap-8">
               {/* Brand and Description */}
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-purple-600 flex items-center justify-center text-xl shadow-md">
-                  🤖
+                <div className="w-10 h-10 shrink-0 shadow-md">
+                  <AiCordMark size={40} variant="tile" />
                 </div>
                 <div>
                   <span className="font-bold text-white text-base font-mono">
-                    {siteConfig.name} Platform
+                    <span className="text-[#22D3EE]">Ai</span>Cord Platform
                   </span>
                   <span className="text-xs text-gray-400 block font-mono">
                     {copyConfig.footer.copyright}
@@ -226,8 +225,8 @@ export default function MarketingLayout({
               </button>
 
               <div className="text-center mb-6">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-cyan-400 to-indigo-600 flex items-center justify-center text-3xl mx-auto mb-3 shadow-lg shadow-cyan-500/30">
-                  🤖
+                <div className="w-14 h-14 mx-auto mb-3 shadow-lg shadow-cyan-500/30">
+                  <AiCordMark size={56} variant="tile" />
                 </div>
                 <h3 className="text-2xl font-black text-white font-mono">
                   Invite AiCord to Discord
