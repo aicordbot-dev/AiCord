@@ -3,16 +3,16 @@
 /**
  * src/components/layout/Navbar.tsx
  * Ultra-clean, minimal floating navbar for AiCord in warm cream & ivory aesthetic.
- * Features official AiCordLogo, navigation anchors, theme selector,
+ * Features official AiCordLogo, navigation anchors, command search pill, theme selector,
  * user session nav, and Discord blurple Add to Discord CTA.
  */
 
 import React, { useState } from 'react';
-import Link from 'next/link';
 import { AiCordLogo } from '@/components/brand/AiCordLogo';
 import { ThemePicker } from '@/components/ui/ThemePicker';
 import { UserNav } from '@/components/navbar/UserNav';
-import { siteConfig } from '@/config/site';
+import { openCommandPalette } from '@/components/ui/CommandPalette';
+import { playPop } from '@/lib/audio';
 
 export interface NavbarProps {
   onOpenInvite?: () => void;
@@ -20,6 +20,11 @@ export interface NavbarProps {
 
 export function Navbar({ onOpenInvite }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const handleOpenSearch = () => {
+    playPop(520);
+    openCommandPalette();
+  };
 
   return (
     <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-[#FDFBF7]/85 border-b border-[#E7E2DA] transition-colors">
@@ -36,12 +41,18 @@ export function Navbar({ onOpenInvite }: NavbarProps) {
         </div>
 
         {/* Desktop Navigation Links */}
-        <nav className="hidden lg:flex items-center gap-7 text-xs font-mono font-medium text-[#57534E]">
+        <nav className="hidden lg:flex items-center gap-5 text-xs font-mono font-medium text-[#57534E]">
           <a
             href="#ai-builder"
             className="hover:text-[#5865F2] transition-colors py-1 px-2 rounded-lg hover:bg-stone-200/50"
           >
             Builder
+          </a>
+          <a
+            href="#playground"
+            className="hover:text-[#5865F2] transition-colors py-1 px-2 rounded-lg hover:bg-stone-200/50"
+          >
+            Playground
           </a>
           <a
             href="#features"
@@ -56,6 +67,12 @@ export function Navbar({ onOpenInvite }: NavbarProps) {
             Themes
           </a>
           <a
+            href="#comparison"
+            className="hover:text-[#5865F2] transition-colors py-1 px-2 rounded-lg hover:bg-stone-200/50"
+          >
+            AiCord vs 10 Bots
+          </a>
+          <a
             href="#pricing"
             className="hover:text-[#5865F2] transition-colors py-1 px-2 rounded-lg hover:bg-stone-200/50"
           >
@@ -65,12 +82,25 @@ export function Navbar({ onOpenInvite }: NavbarProps) {
             href="#faq"
             className="hover:text-[#5865F2] transition-colors py-1 px-2 rounded-lg hover:bg-stone-200/50"
           >
-            Docs
+            FAQ
           </a>
         </nav>
 
         {/* Right Action Cluster */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          {/* Quick Command Palette Search Pill */}
+          <button
+            onClick={handleOpenSearch}
+            className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white hover:bg-stone-50 border border-[#E7E2DA] hover:border-[#5865F2]/50 text-xs font-mono text-[#57534E] hover:text-[#5865F2] transition-all shadow-xs cursor-pointer"
+            title="Search 28+ Commands (Shortcut: /)"
+          >
+            <span className="text-sm">🔍</span>
+            <span className="hidden xl:inline">Commands</span>
+            <kbd className="text-[10px] bg-stone-100 border border-[#E7E2DA] px-1.5 py-0.2 rounded font-bold">
+              /
+            </kbd>
+          </button>
+
           {/* Theme Palette Switcher */}
           <div className="hidden sm:block">
             <ThemePicker variant="navbar" />
@@ -103,6 +133,22 @@ export function Navbar({ onOpenInvite }: NavbarProps) {
       {/* Mobile Drawer Menu */}
       {mobileMenuOpen && (
         <div className="lg:hidden border-t border-[#E7E2DA] bg-[#FDFBF7] px-4 pt-3 pb-6 space-y-3 font-mono text-xs animate-in slide-in-from-top-2 duration-150 shadow-lg">
+          <button
+            onClick={() => {
+              setMobileMenuOpen(false);
+              handleOpenSearch();
+            }}
+            className="w-full py-2.5 px-3 rounded-xl bg-white border border-[#E7E2DA] text-left text-[#1C1917] font-bold flex items-center justify-between shadow-xs"
+          >
+            <span className="flex items-center gap-2">
+              <span>🔍</span>
+              <span>Search 28+ Commands</span>
+            </span>
+            <kbd className="text-[10px] bg-stone-100 border border-[#E7E2DA] px-2 py-0.5 rounded font-bold">
+              /
+            </kbd>
+          </button>
+
           <div className="flex flex-col space-y-1">
             <a
               href="#ai-builder"
@@ -110,6 +156,13 @@ export function Navbar({ onOpenInvite }: NavbarProps) {
               className="py-2 px-3 rounded-lg text-[#1C1917] hover:bg-stone-100 font-medium"
             >
               ⚡ AI Builder
+            </a>
+            <a
+              href="#playground"
+              onClick={() => setMobileMenuOpen(false)}
+              className="py-2 px-3 rounded-lg text-[#1C1917] hover:bg-stone-100 font-medium"
+            >
+              🪙 Playground &amp; Crate
             </a>
             <a
               href="#features"
@@ -123,7 +176,14 @@ export function Navbar({ onOpenInvite }: NavbarProps) {
               onClick={() => setMobileMenuOpen(false)}
               className="py-2 px-3 rounded-lg text-[#1C1917] hover:bg-stone-100 font-medium"
             >
-              🎨 Themes Engine
+              🎨 6 Aesthetic Themes
+            </a>
+            <a
+              href="#comparison"
+              onClick={() => setMobileMenuOpen(false)}
+              className="py-2 px-3 rounded-lg text-[#1C1917] hover:bg-stone-100 font-medium"
+            >
+              ⚖️ AiCord vs 10 Bots
             </a>
             <a
               href="#pricing"

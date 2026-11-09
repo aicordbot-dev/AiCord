@@ -11,3 +11,5 @@ export * from './ThemePicker';
 export * from './Magnetic';
 export * from './SplitText';
 export * from './Preloader';
+export * from './CommandPalette';
+export * from './AudioToggle';

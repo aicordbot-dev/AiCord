@@ -5,7 +5,7 @@
  * Ultra-clean, minimal warm cream marketing layout for AiCord.
  * 100% lightweight 2D CSS + GSAP animations (NO heavy 3D WebGL in the background).
  * Includes Preloader, Minimal Floating Navbar, Main Viewport,
- * Discord OAuth2 Permission Modal, and Categorized Minimal Footer.
+ * Discord OAuth2 Permission Modal, Command Palette, Audio Toggle, and Categorized Minimal Footer.
  */
 
 import React, { useState } from 'react';
@@ -13,6 +13,8 @@ import { LenisProvider } from '@/lib/lenis-provider';
 import { Preloader } from '@/components/ui/Preloader';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
+import { CommandPalette } from '@/components/ui/CommandPalette';
+import { AudioToggle } from '@/components/ui/AudioToggle';
 import { AiCordMark } from '@/components/brand/AiCordMark';
 import { siteConfig } from '@/config/site';
 import { Button } from '@/components/ui/Button';
@@ -34,6 +36,12 @@ export default function MarketingLayout({
       <div className="min-h-screen bg-[#FDFBF7] text-[#1C1917] relative overflow-x-hidden flex flex-col font-sans selection:bg-[#5865F2]/20 selection:text-[#5865F2]">
         {/* ─── Minimal Full-Screen Preloader ────────────────────────────────────── */}
         <Preloader />
+
+        {/* ─── Global Command Search Palette (Trigger: `/` or `Ctrl+K`) ─────────── */}
+        <CommandPalette />
+
+        {/* ─── Floating Procedural WebAudio Micro-Feedback Toggle ──────────────── */}
+        <AudioToggle />
 
         {/* ─── Ambient 2D Warm Glow Orbs (Pure CSS, 0 GPU overhead) ─────────────── */}
         <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
@@ -76,7 +84,7 @@ export default function MarketingLayout({
             <div className="w-full max-w-md rounded-3xl bg-white border border-[#E7E2DA] p-6 sm:p-7 shadow-2xl relative">
               <button
                 onClick={() => setShowInviteModal(false)}
-                className="absolute top-4 right-4 text-[#78716C] hover:text-[#1C1917] text-lg font-mono p-1.5 rounded-lg hover:bg-stone-100 transition-colors"
+                className="absolute top-4 right-4 text-[#78716C] hover:text-[#1C1917] text-lg font-mono p-1.5 rounded-lg hover:bg-stone-100 transition-colors cursor-pointer"
                 aria-label="Close dialog"
               >
                 ✕
