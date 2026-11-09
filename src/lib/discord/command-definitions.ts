@@ -58,6 +58,7 @@ export {
   tempVcCommand,
   quizCommand,
   countdownCommand,
+  clipCommand,
 } from '@/commands';
 
 /**

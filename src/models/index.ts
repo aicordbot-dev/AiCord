@@ -44,6 +44,8 @@ export { TempVoiceRoom } from './TempVoiceRoom';
 export { QuizSession } from './QuizSession';
 export { QuizLeaderboard } from './QuizLeaderboard';
 export { EventCountdown } from './EventCountdown';
+export { ClipSubmission } from './ClipSubmission';
+export { ClipContestConfig } from './ClipContestConfig';
 
 export type { IGuildConfig } from './GuildConfig';
 export type { IBuildJob, BuildJobStatus, CreatedIds, BuildStep } from './BuildJob';
@@ -112,3 +114,5 @@ export type {
 } from './QuizSession';
 export type { IQuizLeaderboard } from './QuizLeaderboard';
 export type { IEventCountdown } from './EventCountdown';
+export type { IClipSubmission, IClipVotes } from './ClipSubmission';
+export type { IClipContestConfig } from './ClipContestConfig';

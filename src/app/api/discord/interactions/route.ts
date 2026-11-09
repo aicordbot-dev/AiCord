@@ -507,6 +507,11 @@ async function handleComponentAsync(
       await handleCountdownComponent(token, customId, userId, guildId, component);
       break;
     }
+    case 'clip_vote': {
+      const { handleClipComponent } = await import('@/commands/clip');
+      await handleClipComponent(token, customId, userId, guildId, component);
+      break;
+    }
     default: {
       if (customId.startsWith('quiz_')) {
         const { handleQuizComponent } = await import('@/commands/quiz');
@@ -516,6 +521,11 @@ async function handleComponentAsync(
       if (customId.startsWith('cd_')) {
         const { handleCountdownComponent } = await import('@/commands/countdown');
         await handleCountdownComponent(token, customId, userId, guildId, component);
+        break;
+      }
+      if (customId.startsWith('clip_')) {
+        const { handleClipComponent } = await import('@/commands/clip');
+        await handleClipComponent(token, customId, userId, guildId, component);
         break;
       }
       if (customId.startsWith('pet_')) {

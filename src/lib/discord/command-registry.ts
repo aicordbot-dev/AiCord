@@ -75,6 +75,7 @@ import { gitCommand } from '@/commands/git';
 import { tempVcCommand } from '@/commands/temp-vc';
 import { quizCommand } from '@/commands/quiz';
 import { countdownCommand } from '@/commands/countdown';
+import { clipCommand } from '@/commands/clip';
 import {
   banCommand,
   kickCommand,
@@ -251,6 +252,7 @@ const GIT_COMMAND_NAMES = new Set(['git']);
 const TEMP_VC_COMMAND_NAMES = new Set(['temp-vc']);
 const QUIZ_COMMAND_NAMES = new Set(['quiz']);
 const COUNTDOWN_COMMAND_NAMES = new Set(['countdown']);
+const CLIP_COMMAND_NAMES = new Set(['clip']);
 
 /**
  * Retrieve a registered command by its primary name.
@@ -355,6 +357,10 @@ export function getCommand(name: string): RegisteredCommand | undefined {
   }
   if (!cmd && COUNTDOWN_COMMAND_NAMES.has(name)) {
     registerCountdownCommands();
+    cmd = registry.get(name);
+  }
+  if (!cmd && CLIP_COMMAND_NAMES.has(name)) {
+    registerClipCommands();
     cmd = registry.get(name);
   }
   if (!cmd && SANDBOX_COMMAND_NAMES.has(name)) {
@@ -595,6 +601,13 @@ export function registerCountdownCommands(): void {
 }
 
 /**
+ * Register all Service 10 Community Gaming Clip Competitions commands into the registry.
+ */
+export function registerClipCommands(): void {
+  registerCommand(clipCommand);
+}
+
+/**
  * Register all commands across all suites.
  */
 export function registerAllCommands(): void {
@@ -627,6 +640,7 @@ export function registerAllCommands(): void {
   registerTempVoiceCommands();
   registerQuizCommands();
   registerCountdownCommands();
+  registerClipCommands();
 }
 
 /**
