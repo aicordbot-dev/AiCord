@@ -6,10 +6,13 @@
  * - /premium status: Embed showing server tier badge, expiration, active meters, and upgrade info
  * - /premium features: Themed comparison matrix embed of all subscription tiers
  * - /premium redeem <license_key>: Redeems license key and activates tier (Requires MANAGE_GUILD)
+ * - /premium buy <tier> [billing]: Generates instant Stripe Checkout link button for server upgrade
  */
 
 import {
   ApplicationCommandOptionType,
+  ComponentType,
+  ButtonStyle,
   type APIChatInputApplicationCommandInteraction,
   type APIEmbed,
 } from 'discord-api-types/v10';
@@ -26,6 +29,12 @@ import {
   TIER_DEFINITIONS,
   type SubscriptionTier,
 } from '@/lib/premium/entitlements';
+import {
+  createCheckoutSession,
+  type CheckoutTier,
+  type CheckoutInterval,
+} from '@/lib/stripe';
+import { siteConfig } from '@/config/site';
 
 // ─── Option Helper ────────────────────────────────────────────────────────────
 
@@ -133,7 +142,7 @@ export function buildPremiumStatusEmbed(
         value:
           sub.tier === 'lifetime'
             ? '⭐ This server holds permanent lifetime VIP status. All current and future perks remain unlocked forever!'
-            : 'To upgrade or extend your tier, use `/premium redeem <license_key>`.\nExplore all tiers and limits with `/premium features`.',
+            : 'To upgrade or extend your tier instantly, use `/premium buy tier:<pro|ultimate|lifetime>` or redeem an existing key with `/premium redeem <license_key>`.\nExplore all tiers and limits with `/premium features`.',
         inline: false,
       },
     ],
@@ -211,7 +220,7 @@ export function buildPremiumFeaturesEmbed(): APIEmbed {
       },
     ],
     footer: {
-      text: 'Activate your server instantly using /premium redeem <license_key>',
+      text: 'Upgrade instantly with /premium buy or activate with /premium redeem <license_key>',
     },
   };
 }
@@ -278,6 +287,116 @@ export function buildRedemptionSuccessEmbed(
       text: `AiCord Premium Entitlement Engine • Guild: ${guildId}`,
     },
   };
+}
+
+export function buildPremiumBuyEmbed(
+  tier: CheckoutTier,
+  billing: 'monthly' | 'yearly',
+  guildId?: string,
+): { embed: APIEmbed; priceText: string } {
+  const tierName =
+    tier === 'pro'
+      ? 'Pro Guild'
+      : tier === 'ultimate'
+        ? 'Ultimate Sovereign'
+        : 'Lifetime Sovereign';
+
+  const badge = TIER_BADGES[tier];
+  const color = TIER_COLORS[tier];
+  const limits = TIER_DEFINITIONS[tier].details;
+
+  let priceText: string;
+  let billingText: string;
+
+  if (tier === 'lifetime') {
+    priceText = '$199';
+    billingText = '$199 one-time payment (Lifetime Permanent Pass)';
+  } else if (tier === 'pro') {
+    if (billing === 'yearly') {
+      priceText = '$108/yr';
+      billingText = '$108 billed annually ($9/mo, 25% discount)';
+    } else {
+      priceText = '$12/mo';
+      billingText = '$12 billed monthly';
+    }
+  } else {
+    // ultimate
+    if (billing === 'yearly') {
+      priceText = '$276/yr';
+      billingText = '$276 billed annually ($23/mo, 20% discount)';
+    } else {
+      priceText = '$29/mo';
+      billingText = '$29 billed monthly';
+    }
+  }
+
+  const embed: APIEmbed = {
+    title: `💳 AiCord Premium Checkout • ${tierName}`,
+    description: `Upgrade **${guildId ? `this server (\`${guildId}\`)` : 'your community'}** to **${badge}**. Experience enterprise power, higher limits, and advanced AI features immediately after payment confirmation.`,
+    color,
+    fields: [
+      {
+        name: '💰 Selected Plan & Price',
+        value: `• **Tier:** **${badge}**\n• **Amount:** \`${priceText}\`\n• **Billing:** ${billingText}`,
+        inline: false,
+      },
+      {
+        name: '✨ Active Server Perks',
+        value:
+          `• **Monthly AI Builds:** \`${limits.buildsPerMonth}\`\n` +
+          `• **Support Tickets:** \`${limits.tickets}\`\n` +
+          `• **Custom Shop Items:** \`${limits.shopItems}\`\n` +
+          `• **Themes & Palettes:** \`${limits.themes}\`\n` +
+          `• **Cloud Backups:** \`${limits.backups}\`\n` +
+          `• **24/7 Voice Radio:** \`${limits.radio}\`\n` +
+          `• **WhatsApp Bridge:** \`${limits.whatsapp}\`\n` +
+          `• **Boss Raids & AI:** \`${limits.bossRaids}\``,
+        inline: false,
+      },
+      {
+        name: '🔒 Instant & Secure Fulfillment',
+        value:
+          guildId
+            ? `Your server (\`${guildId}\`) will be automatically upgraded as soon as the Stripe checkout completes.`
+            : `A cryptographic HMAC license key will be generated for your account, redeemable anywhere with \`/premium redeem\`.`,
+        inline: false,
+      },
+    ],
+    footer: {
+      text: 'AiCord Secure Stripe Checkout • Instant Activation',
+    },
+  };
+
+  return { embed, priceText };
+}
+
+export function buildPremiumBuyComponents(
+  checkoutUrl: string,
+  priceText: string,
+): unknown[] {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || siteConfig.url || 'https://aicord.vercel.app';
+
+  return [
+    {
+      type: ComponentType.ActionRow,
+      components: [
+        {
+          type: ComponentType.Button,
+          style: ButtonStyle.Link,
+          label: `Pay with Stripe (${priceText})`,
+          url: checkoutUrl,
+          emoji: { name: '💳' },
+        },
+        {
+          type: ComponentType.Button,
+          style: ButtonStyle.Link,
+          label: 'View Feature Matrix',
+          url: `${siteUrl}/#pricing`,
+          emoji: { name: '🌐' },
+        },
+      ],
+    },
+  ];
 }
 
 // ─── Subcommand Handlers ──────────────────────────────────────────────────────
@@ -356,6 +475,40 @@ export async function handlePremiumRedeemSubcommand(
   await editInteractionResponse(token, { embeds: [embed] });
 }
 
+export async function handlePremiumBuySubcommand(
+  token: string,
+  guildId: string,
+  userId: string,
+  subOptions?: Array<{ name: string; value?: unknown }>,
+): Promise<void> {
+  const rawTier = (getOption<string>(subOptions, 'tier') ?? 'pro').toLowerCase();
+  const validTier: CheckoutTier =
+    rawTier === 'ultimate' ? 'ultimate' : rawTier === 'lifetime' ? 'lifetime' : 'pro';
+
+  const rawBilling = (getOption<string>(subOptions, 'billing') ?? 'monthly').toLowerCase();
+  const validBilling: CheckoutInterval =
+    validTier === 'lifetime' ? 'lifetime' : rawBilling === 'yearly' ? 'yearly' : 'monthly';
+
+  const checkoutSession = await createCheckoutSession({
+    tier: validTier,
+    interval: validBilling,
+    guildId: guildId || undefined,
+    userId: userId || undefined,
+  });
+
+  const { embed, priceText } = buildPremiumBuyEmbed(
+    validTier,
+    validBilling === 'yearly' ? 'yearly' : 'monthly',
+    guildId,
+  );
+  const components = buildPremiumBuyComponents(checkoutSession.url, priceText);
+
+  await editInteractionResponse(token, {
+    embeds: [embed],
+    components,
+  });
+}
+
 // ─── Main Slash Command Execution ─────────────────────────────────────────────
 
 export async function executePremiumCommand(
@@ -385,6 +538,9 @@ export async function executePremiumCommand(
     case 'redeem':
       await handlePremiumRedeemSubcommand(token, guildId, userId, interaction, subOptions);
       break;
+    case 'buy':
+      await handlePremiumBuySubcommand(token, guildId, userId, subOptions);
+      break;
     default:
       // Default to status view if no subcommand supplied
       await handlePremiumStatusSubcommand(token, guildId);
@@ -396,7 +552,7 @@ export async function executePremiumCommand(
 
 export const premiumCommand: RegisteredCommand = {
   name: 'premium',
-  description: 'Manage server subscription tier, check entitlements, and redeem license keys',
+  description: 'Manage server subscription tier, check entitlements, buy upgrades, and redeem keys',
   category: 'utility',
   options: [
     {
@@ -408,6 +564,34 @@ export const premiumCommand: RegisteredCommand = {
       name: 'features',
       description: 'View the full comparison matrix across all AiCord subscription tiers',
       type: ApplicationCommandOptionType.Subcommand,
+    },
+    {
+      name: 'buy',
+      description: 'Generate an instant Stripe Checkout payment link to upgrade server tier',
+      type: ApplicationCommandOptionType.Subcommand,
+      options: [
+        {
+          name: 'tier',
+          description: 'Subscription tier to purchase',
+          type: ApplicationCommandOptionType.String,
+          required: true,
+          choices: [
+            { name: 'Pro ($12/mo)', value: 'pro' },
+            { name: 'Ultimate ($29/mo)', value: 'ultimate' },
+            { name: 'Lifetime Sovereign ($199 one-time)', value: 'lifetime' },
+          ],
+        },
+        {
+          name: 'billing',
+          description: 'Billing interval (monthly or yearly with discount)',
+          type: ApplicationCommandOptionType.String,
+          required: false,
+          choices: [
+            { name: 'Monthly', value: 'monthly' },
+            { name: 'Yearly (20-25% discount)', value: 'yearly' },
+          ],
+        },
+      ],
     },
     {
       name: 'redeem',

@@ -46,6 +46,7 @@ export { QuizLeaderboard } from './QuizLeaderboard';
 export { EventCountdown } from './EventCountdown';
 export { ClipSubmission } from './ClipSubmission';
 export { ClipContestConfig } from './ClipContestConfig';
+export { LicenseKey } from './LicenseKey';
 
 export type { IGuildConfig } from './GuildConfig';
 export type { IBuildJob, BuildJobStatus, CreatedIds, BuildStep } from './BuildJob';
@@ -98,6 +99,7 @@ export type {
   ConfessionStatus,
 } from './Confession';
 export type { IConfessionConfig } from './ConfessionConfig';
+export type { ILicenseKey } from './LicenseKey';
 export type { ICrushMatch } from './CrushMatch';
 export type { IServerPet, PetSpecies, IPetStats } from './ServerPet';
 export type { IUserTimezone, IActiveHours } from './UserTimezone';

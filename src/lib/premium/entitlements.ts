@@ -602,3 +602,91 @@ export async function redeemLicenseKey(
     expiresAt: newExpiresAt ?? undefined,
   };
 }
+
+/**
+ * Directly activates or extends a guild subscription tier.
+ * Called by Stripe webhook handler upon completed checkout.
+ */
+export async function activateGuildSubscription(
+  guildId: string,
+  tier: SubscriptionTier,
+  durationDays?: number,
+  key?: string,
+  userId?: string,
+): Promise<{
+  success: boolean;
+  tier: SubscriptionTier;
+  expiresAt?: Date;
+  licenseKey: string;
+}> {
+  if (!guildId) {
+    throw new Error('[EntitlementEngine] guildId is required to activate subscription');
+  }
+
+  const licenseKey = key && key.trim() ? key.trim().toUpperCase() : generateLicenseKey(tier, durationDays);
+  const newFeatures = { ...TIER_DEFINITIONS[tier].features };
+  const currentSub = await getGuildSubscription(guildId);
+
+  let newExpiresAt: Date | null = null;
+  if (tier !== 'lifetime') {
+    const effectiveDays = durationDays && durationDays > 0 ? durationDays : 30;
+    const durationMs = effectiveDays * 24 * 60 * 60 * 1000;
+
+    if (
+      isSubscriptionActive(currentSub) &&
+      currentSub.tier === tier &&
+      currentSub.expiresAt
+    ) {
+      newExpiresAt = new Date(new Date(currentSub.expiresAt).getTime() + durationMs);
+    } else {
+      newExpiresAt = new Date(Date.now() + durationMs);
+    }
+  }
+
+  if (isTestMode()) {
+    const updatedSub = {
+      guildId,
+      tier,
+      licenseKey,
+      ownerId: userId || currentSub.ownerId || '',
+      activatedAt: new Date(),
+      expiresAt: newExpiresAt,
+      features: newFeatures,
+      createdAt: currentSub.createdAt ?? new Date(),
+      updatedAt: new Date(),
+    } as unknown as IGuildSubscription;
+
+    testSubscriptions.set(guildId, updatedSub);
+    testRedeemedKeys.add(licenseKey);
+
+    return {
+      success: true,
+      tier,
+      expiresAt: newExpiresAt ?? undefined,
+      licenseKey,
+    };
+  }
+
+  await connectDB();
+  await GuildSubscription.findOneAndUpdate(
+    { guildId },
+    {
+      $set: {
+        tier,
+        licenseKey,
+        ownerId: userId || currentSub.ownerId || '',
+        activatedAt: new Date(),
+        expiresAt: newExpiresAt,
+        features: newFeatures,
+      },
+    },
+    { upsert: true, new: true },
+  );
+
+  return {
+    success: true,
+    tier,
+    expiresAt: newExpiresAt ?? undefined,
+    licenseKey,
+  };
+}

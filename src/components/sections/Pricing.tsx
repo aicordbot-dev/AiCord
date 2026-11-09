@@ -6,6 +6,7 @@
  * Clean light cream cards for Free, Pro, Ultimate, Lifetime Sovereign.
  * Animated border highlight on the recommended plan.
  * Monthly / Yearly discount toggle.
+ * Seamless Stripe Checkout redirection for paid tiers (Pro, Ultimate, Lifetime).
  */
 
 import React, { useState } from 'react';
@@ -15,6 +16,38 @@ import { siteConfig } from '@/config/site';
 
 export function Pricing() {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+
+  const handlePlanCheckout = async (planId: string, interval: 'monthly' | 'yearly') => {
+    if (planId === 'free') return;
+    setLoadingPlan(planId);
+    setCheckoutError(null);
+
+    try {
+      const res = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          planId,
+          interval,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.url) {
+        throw new Error(data.error || 'Failed to initialize Stripe checkout.');
+      }
+
+      window.location.href = data.url;
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Checkout failed.';
+      setCheckoutError(msg);
+      setLoadingPlan(null);
+    }
+  };
 
   return (
     <section id="pricing" className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-t border-[#E7E2DA]">
@@ -61,6 +94,12 @@ export function Pricing() {
             </button>
           </div>
         </div>
+
+        {checkoutError && (
+          <div className="mt-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-mono text-center max-w-md mx-auto">
+            {checkoutError}
+          </div>
+        )}
       </div>
 
       {/* Pricing Cards Grid */}
@@ -82,6 +121,8 @@ export function Pricing() {
                 : '/mo';
 
           const isRecommended = plan.popular;
+          const isFree = plan.id === 'free';
+          const isLoadingThis = loadingPlan === plan.id;
 
           return (
             <div
@@ -145,18 +186,40 @@ export function Pricing() {
               </div>
 
               {/* Action Button */}
-              <a
-                href={siteConfig.getInviteUrl()}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`w-full py-2.5 px-4 rounded-xl font-mono text-xs font-bold text-center transition-all cursor-pointer block select-none ${
-                  isRecommended
-                    ? 'bg-[#5865F2] hover:bg-[#4752C4] text-white shadow-md shadow-[#5865F2]/25'
-                    : 'bg-stone-100 hover:bg-stone-200 text-[#1C1917] border border-[#E7E2DA]'
-                }`}
-              >
-                {plan.ctaText}
-              </a>
+              {isFree ? (
+                <a
+                  href={siteConfig.getInviteUrl()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`w-full py-2.5 px-4 rounded-xl font-mono text-xs font-bold text-center transition-all cursor-pointer block select-none ${
+                    isRecommended
+                      ? 'bg-[#5865F2] hover:bg-[#4752C4] text-white shadow-md shadow-[#5865F2]/25'
+                      : 'bg-stone-100 hover:bg-stone-200 text-[#1C1917] border border-[#E7E2DA]'
+                  }`}
+                >
+                  {plan.ctaText}
+                </a>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => handlePlanCheckout(plan.id, isYearly ? 'yearly' : 'monthly')}
+                  disabled={loadingPlan !== null}
+                  className={`w-full py-2.5 px-4 rounded-xl font-mono text-xs font-bold text-center transition-all cursor-pointer block select-none disabled:opacity-60 disabled:cursor-wait ${
+                    isRecommended
+                      ? 'bg-[#5865F2] hover:bg-[#4752C4] text-white shadow-md shadow-[#5865F2]/25'
+                      : 'bg-stone-100 hover:bg-stone-200 text-[#1C1917] border border-[#E7E2DA]'
+                  }`}
+                >
+                  {isLoadingThis ? (
+                    <span className="inline-flex items-center gap-1.5 justify-center">
+                      <span className="w-2 h-2 rounded-full bg-current animate-ping" />
+                      Connecting to Stripe...
+                    </span>
+                  ) : (
+                    plan.ctaText
+                  )}
+                </button>
+              )}
             </div>
           );
         })}
