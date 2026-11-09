@@ -20,6 +20,7 @@ export interface CreateCheckoutSessionParams {
   guildId?: string;
   userId?: string;
   customerEmail?: string;
+  baseUrl?: string;
   successUrl?: string;
   cancelUrl?: string;
 }
@@ -114,7 +115,7 @@ export function getPlanPricing(
 export async function createCheckoutSession(
   params: CreateCheckoutSessionParams,
 ): Promise<CheckoutSessionResult> {
-  const { tier, guildId, userId, customerEmail, successUrl, cancelUrl } = params;
+  const { tier, guildId, userId, customerEmail, baseUrl, successUrl, cancelUrl } = params;
 
   if (!tier || !['pro', 'ultimate', 'lifetime'].includes(tier)) {
     throw new Error(`Invalid tier "${tier}". Must be one of: pro, ultimate, lifetime.`);
@@ -130,12 +131,18 @@ export async function createCheckoutSession(
   const pricing = getPlanPricing(tier, effectiveInterval);
   const mode: 'payment' | 'subscription' = tier === 'lifetime' ? 'payment' : 'subscription';
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || siteConfig.url || 'https://aicord.vercel.app';
+  const siteUrl = (
+    baseUrl ||
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    siteConfig.url ||
+    'http://localhost:3000'
+  ).replace(/\/$/, '');
+
   const effectiveSuccessUrl =
     successUrl ||
-    `${siteUrl}/#pricing?checkout=success&tier=${tier}&session_id={CHECKOUT_SESSION_ID}`;
+    `${siteUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}&tier=${tier}`;
   const effectiveCancelUrl =
-    cancelUrl || `${siteUrl}/#pricing?checkout=cancelled&tier=${tier}`;
+    cancelUrl || `${siteUrl}/checkout/cancel?tier=${tier}`;
 
   const metadata: Record<string, string> = {
     guildId: guildId || '',

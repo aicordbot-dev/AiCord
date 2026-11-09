@@ -149,6 +149,15 @@ describe('Stripe Payment Integration — Checkout Sessions', () => {
       assert.ok(result.url.includes('userId=user_tester_505'));
     });
 
+    it('generates mock checkout URL respecting custom baseUrl', async () => {
+      const result = await createCheckoutSession({
+        tier: 'pro',
+        baseUrl: 'http://localhost:3000',
+      });
+
+      assert.ok(result.url.startsWith('http://localhost:3000/checkout/mock'));
+    });
+
     it('rejects invalid tier parameter with descriptive error', async () => {
       await assert.rejects(async () => {
         // @ts-expect-error Testing invalid tier input
@@ -198,11 +207,88 @@ describe('Stripe Payment Integration — Checkout Sessions', () => {
       assert.strictEqual(params.metadata?.interval, 'monthly');
       assert.strictEqual(params.metadata?.guildId, 'guild_stripe_301');
       assert.strictEqual(params.metadata?.userId, 'user_stripe_302');
+      assert.strictEqual(
+        params.success_url,
+        'https://aicord.vercel.app/checkout/success?session_id={CHECKOUT_SESSION_ID}&tier=pro',
+      );
+      assert.strictEqual(
+        params.cancel_url,
+        'https://aicord.vercel.app/checkout/cancel?tier=pro',
+      );
 
       const item = params.line_items?.[0];
       assert.ok(item);
       assert.strictEqual(item.price_data?.unit_amount, 1200);
       assert.strictEqual(item.price_data?.recurring?.interval, 'month');
+    });
+
+    it('creates Stripe checkout session with custom baseUrl returning to caller origin', async () => {
+      let capturedParams: Stripe.Checkout.SessionCreateParams | null = null;
+
+      const mockStripe = {
+        checkout: {
+          sessions: {
+            create: async (params: Stripe.Checkout.SessionCreateParams) => {
+              capturedParams = params;
+              return {
+                id: 'cs_live_custom_host_id',
+                url: 'https://checkout.stripe.com/c/pay/cs_live_custom_host_id',
+              };
+            },
+          },
+        },
+      } as unknown as Stripe;
+
+      setStripeClientForTest(mockStripe);
+
+      const result = await createCheckoutSession({
+        tier: 'ultimate',
+        interval: 'monthly',
+        baseUrl: 'http://localhost:3000',
+      });
+
+      assert.strictEqual(result.sessionId, 'cs_live_custom_host_id');
+      assert.ok(capturedParams);
+      const params = capturedParams as Stripe.Checkout.SessionCreateParams;
+      assert.strictEqual(
+        params.success_url,
+        'http://localhost:3000/checkout/success?session_id={CHECKOUT_SESSION_ID}&tier=ultimate',
+      );
+      assert.strictEqual(
+        params.cancel_url,
+        'http://localhost:3000/checkout/cancel?tier=ultimate',
+      );
+    });
+
+    it('honors explicit successUrl and cancelUrl overrides', async () => {
+      let capturedParams: Stripe.Checkout.SessionCreateParams | null = null;
+
+      const mockStripe = {
+        checkout: {
+          sessions: {
+            create: async (params: Stripe.Checkout.SessionCreateParams) => {
+              capturedParams = params;
+              return {
+                id: 'cs_live_override_id',
+                url: 'https://checkout.stripe.com/c/pay/cs_live_override_id',
+              };
+            },
+          },
+        },
+      } as unknown as Stripe;
+
+      setStripeClientForTest(mockStripe);
+
+      await createCheckoutSession({
+        tier: 'lifetime',
+        successUrl: 'https://custom.site/success-override',
+        cancelUrl: 'https://custom.site/cancel-override',
+      });
+
+      assert.ok(capturedParams);
+      const params = capturedParams as Stripe.Checkout.SessionCreateParams;
+      assert.strictEqual(params.success_url, 'https://custom.site/success-override');
+      assert.strictEqual(params.cancel_url, 'https://custom.site/cancel-override');
     });
 
     it('creates Stripe checkout session for Pro Yearly with subscription mode & 10800 cents', async () => {

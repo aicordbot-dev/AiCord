@@ -16,7 +16,7 @@ function MockCheckoutContent() {
   const sessionId = searchParams.get('session_id') || 'cs_mock_default';
   const tier = searchParams.get('tier') || 'pro';
   const interval = searchParams.get('interval') || 'monthly';
-  const guildId = searchParams.get('guildId') || '';
+  const guildId = searchParams.get('guildId') || searchParams.get('guild_id') || '';
   const userId = searchParams.get('userId') || '';
 
   const [isProcessing, setIsProcessing] = useState(false);
@@ -65,14 +65,20 @@ function MockCheckoutContent() {
         throw new Error('Failed to notify webhook');
       }
 
-      setStatusMessage('Payment verified! Redirecting to dashboard...');
+      setStatusMessage('Payment verified! Redirecting to confirmation...');
       setTimeout(() => {
-        router.push(`/#pricing?checkout=success&tier=${tier}&session_id=${sessionId}`);
+        router.push(
+          `/checkout/success?session_id=${sessionId}&tier=${tier}&interval=${interval}${
+            guildId ? `&guild_id=${encodeURIComponent(guildId)}` : ''
+          }`,
+        );
       }, 1000);
     } catch {
-      setStatusMessage('Mock payment completed. Returning to site...');
+      setStatusMessage('Mock payment completed. Returning to confirmation...');
       setTimeout(() => {
-        router.push(`/#pricing?checkout=success&tier=${tier}`);
+        router.push(
+          `/checkout/success?session_id=${sessionId}&tier=${tier}&interval=${interval}`,
+        );
       }, 1000);
     }
   };
@@ -131,7 +137,7 @@ function MockCheckoutContent() {
             {isProcessing ? 'Processing Payment...' : `Complete Mock Payment (${priceDisplay})`}
           </button>
           <button
-            onClick={() => router.push('/#pricing?checkout=cancelled')}
+            onClick={() => router.push(`/checkout/cancel?tier=${tier}`)}
             disabled={isProcessing}
             className="w-full py-2.5 px-4 rounded-xl bg-stone-100 hover:bg-stone-200 text-[#78716C] font-mono text-xs font-bold transition-all border border-[#E7E2DA] cursor-pointer"
           >

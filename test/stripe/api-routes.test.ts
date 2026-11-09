@@ -1,14 +1,14 @@
 /**
  * test/stripe/api-routes.test.ts
  * Unit tests for Stripe Web Checkout and Webhook API Route Handlers:
- * - POST /api/stripe/checkout (validation, anonymous & authenticated sessions)
+ * - POST /api/stripe/checkout (validation, dynamic origin detection, anonymous & authenticated sessions)
  * - POST /api/stripe/webhook (checkout.session.completed with/without guildId)
  */
 
 import '../test-env';
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { POST as handleCheckoutPost } from '@/app/api/stripe/checkout/route';
+import { POST as handleCheckoutPost, getRequestBaseUrl } from '@/app/api/stripe/checkout/route';
 import { POST as handleWebhookPost } from '@/app/api/stripe/webhook/route';
 import {
   enableTestMode,
@@ -108,9 +108,68 @@ describe('Stripe API Routes Handler', () => {
       assert.ok(json.url?.includes('tier=ultimate'));
       assert.ok(json.url?.includes('interval=yearly'));
     });
+
+    it('detects origin from origin header and routes checkout url to the caller domain', async () => {
+      const req = new Request('http://localhost:3000/api/stripe/checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          origin: 'https://aicord-preview-123.vercel.app',
+        },
+        body: JSON.stringify({
+          planId: 'lifetime',
+        }),
+      });
+
+      const res = await handleCheckoutPost(req);
+      assert.strictEqual(res.status, 200);
+      const json = await res.json();
+      assert.ok(json.url?.startsWith('https://aicord-preview-123.vercel.app/checkout/mock'));
+    });
+
+    it('detects origin from referer header when origin header is missing', async () => {
+      const req = new Request('http://localhost:3000/api/stripe/checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          referer: 'https://custom-deploy.vercel.app/pricing?test=1',
+        },
+        body: JSON.stringify({
+          planId: 'pro',
+        }),
+      });
+
+      const res = await handleCheckoutPost(req);
+      assert.strictEqual(res.status, 200);
+      const json = await res.json();
+      assert.ok(json.url?.startsWith('https://custom-deploy.vercel.app/checkout/mock'));
+    });
   });
 
-  // ─── 2. POST /api/stripe/webhook ───────────────────────────────────────────
+  // ─── 2. Dynamic Origin Extraction Helper ───────────────────────────────────
+
+  describe('getRequestBaseUrl()', () => {
+    it('extracts origin from origin header', () => {
+      const req = new Request('http://localhost:3000/api/stripe/checkout', {
+        headers: { origin: 'https://aicord.vercel.app' },
+      });
+      assert.strictEqual(getRequestBaseUrl(req), 'https://aicord.vercel.app');
+    });
+
+    it('extracts origin from referer header if origin is absent', () => {
+      const req = new Request('http://localhost:3000/api/stripe/checkout', {
+        headers: { referer: 'https://staging.aicord.vercel.app/path' },
+      });
+      assert.strictEqual(getRequestBaseUrl(req), 'https://staging.aicord.vercel.app');
+    });
+
+    it('falls back to request URL origin when headers are absent', () => {
+      const req = new Request('http://127.0.0.1:8080/api/stripe/checkout');
+      assert.strictEqual(getRequestBaseUrl(req), 'http://127.0.0.1:8080');
+    });
+  });
+
+  // ─── 3. POST /api/stripe/webhook ───────────────────────────────────────────
 
   describe('POST /api/stripe/webhook', () => {
     it('returns 400 on invalid JSON payload when webhook secret is unconfigured', async () => {
