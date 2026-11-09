@@ -21,7 +21,7 @@ const optionalString = z
   .optional()
   .transform((val) => (val && val !== 'undefined' && val !== 'null' ? val : undefined));
 
-const envSchema = z.object({
+const serverEnvSchema = z.object({
   // Discord Application
   DISCORD_APP_ID: z.string().min(17, 'DISCORD_APP_ID must be a valid snowflake'),
   DISCORD_PUBLIC_KEY: z.string().length(64, 'DISCORD_PUBLIC_KEY must be 64 hex chars'),
@@ -53,17 +53,50 @@ const envSchema = z.object({
   // Admin IDs (comma-separated Discord user snowflakes)
   ADMIN_DISCORD_IDS: optionalString,
 
-  // Public URL
-  NEXT_PUBLIC_APP_URL: z.string().url('NEXT_PUBLIC_APP_URL must be a valid URL'),
+  // Client / Public Variables
+  NEXT_PUBLIC_APP_URL: z.string().url('NEXT_PUBLIC_APP_URL must be a valid URL').optional().default('https://aicord.vercel.app'),
+  NEXT_PUBLIC_SITE_URL: optionalUrl.default('https://aicord.vercel.app'),
+  NEXT_PUBLIC_DISCORD_CLIENT_ID: z.string().optional().default('1567565252525170748'),
+  NEXT_PUBLIC_DEMO_MODE: z
+    .union([z.string(), z.boolean()])
+    .optional()
+    .transform((val) => val === true || val === 'true')
+    .default(false),
 
   // Node environment
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
 });
 
-export type Env = z.infer<typeof envSchema>;
+const clientEnvSchema = z.object({
+  NEXT_PUBLIC_APP_URL: z.string().url('NEXT_PUBLIC_APP_URL must be a valid URL').optional().default('https://aicord.vercel.app'),
+  NEXT_PUBLIC_SITE_URL: optionalUrl.default('https://aicord.vercel.app'),
+  NEXT_PUBLIC_DISCORD_CLIENT_ID: z.string().optional().default('1567565252525170748'),
+  NEXT_PUBLIC_DEMO_MODE: z
+    .union([z.string(), z.boolean()])
+    .optional()
+    .transform((val) => val === true || val === 'true')
+    .default(false),
+  NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+});
+
+export type Env = z.infer<typeof serverEnvSchema>;
+export type ClientEnv = z.infer<typeof clientEnvSchema>;
 
 function validateEnv(): Env {
-  const parsed = envSchema.safeParse(process.env);
+  // If running in browser environment, safely validate client vars with mock fallback for server fields
+  if (typeof window !== 'undefined') {
+    const clientParsed = clientEnvSchema.safeParse(process.env);
+    const clientData = clientParsed.success ? clientParsed.data : {
+      NEXT_PUBLIC_APP_URL: 'https://aicord.vercel.app',
+      NEXT_PUBLIC_SITE_URL: 'https://aicord.vercel.app',
+      NEXT_PUBLIC_DISCORD_CLIENT_ID: '1567565252525170748',
+      NEXT_PUBLIC_DEMO_MODE: false,
+      NODE_ENV: 'development' as const,
+    };
+    return clientData as unknown as Env;
+  }
+
+  const parsed = serverEnvSchema.safeParse(process.env);
 
   if (!parsed.success) {
     const formatted = parsed.error.issues
