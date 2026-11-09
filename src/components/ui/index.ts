@@ -10,3 +10,4 @@ export * from './Counter';
 export * from './ThemePicker';
 export * from './Magnetic';
 export * from './SplitText';
+export * from './Preloader';

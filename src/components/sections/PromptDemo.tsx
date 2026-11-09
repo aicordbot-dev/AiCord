@@ -265,16 +265,16 @@ export function PromptDemo() {
 
       {/* Section Header */}
       <div className="text-center max-w-3xl mx-auto mb-10 space-y-3">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-xs font-mono text-cyan-300">
-          <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-          <span>{copyConfig.promptDemo.badge}</span>
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-[#E7E2DA] shadow-xs text-xs font-mono text-[#57534E]">
+          <span className="w-2 h-2 rounded-full bg-[#5865F2] animate-pulse" />
+          <span className="font-semibold text-[#1C1917]">{copyConfig.promptDemo.badge}</span>
         </div>
 
-        <h2 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight font-mono">
+        <h2 className="text-3xl sm:text-5xl font-black text-[#1C1917] tracking-tight font-mono">
           {copyConfig.promptDemo.title}
         </h2>
 
-        <p className="text-sm sm:text-base text-gray-300 font-sans leading-relaxed">
+        <p className="text-sm sm:text-base text-[#57534E] font-sans font-medium leading-relaxed">
           {copyConfig.promptDemo.subtitle}
         </p>
       </div>
@@ -287,10 +287,10 @@ export function PromptDemo() {
             <button
               key={bp.id}
               onClick={() => handleSelectBlueprint(bp.id)}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-sans font-medium whitespace-nowrap transition-all duration-150 cursor-pointer border ${
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-sans font-semibold whitespace-nowrap transition-all duration-150 cursor-pointer border ${
                 isSelected
-                  ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50 shadow-md shadow-cyan-500/20 scale-[1.02]'
-                  : 'bg-white/5 text-gray-400 border-white/10 hover:text-white hover:bg-white/10'
+                  ? 'bg-[#5865F2] text-white border-[#5865F2] shadow-sm shadow-[#5865F2]/25 scale-[1.02]'
+                  : 'bg-white text-[#57534E] border-[#E7E2DA] hover:text-[#1C1917] hover:bg-stone-50 shadow-xs'
               }`}
             >
               <span className="text-base">{bp.icon}</span>
@@ -301,7 +301,7 @@ export function PromptDemo() {
       </div>
 
       {/* ─── Main Discord Mock Container ───────────────────────────────────────── */}
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-4xl mx-auto rounded-3xl bg-white border border-[#E7E2DA] p-3 sm:p-5 shadow-xl">
         {/* User Command Execution Mock */}
         <div className="mb-2 pl-2">
           <SlashCommand

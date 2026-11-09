@@ -5,6 +5,7 @@
  * Metric display counter component.
  * Displays counter numbers, suffix/prefix, and strictly renders
  * a "sample data" badge whenever isSample is true (mandatory per spec).
+ * Supports dark and light colorScheme for clean contrast on cream background.
  */
 
 import React from 'react';
@@ -20,6 +21,7 @@ export interface CounterProps {
   description?: string;
   isSample?: boolean;
   size?: 'sm' | 'md' | 'lg';
+  colorScheme?: 'dark' | 'light';
   className?: string;
   valueClassName?: string;
 }
@@ -33,6 +35,7 @@ export function Counter({
   description,
   isSample,
   size = 'md',
+  colorScheme = 'dark',
   className = '',
   valueClassName = '',
 }: CounterProps) {
@@ -59,16 +62,28 @@ export function Counter({
     },
   }[size];
 
+  const isLight = colorScheme === 'light';
+
   return (
     <div className={`flex flex-col font-mono ${className}`}>
       {/* Counter Value Row */}
       <div className="flex items-baseline gap-1.5 flex-wrap">
         {displayPrefix && (
-          <span className="text-gray-400 text-lg font-bold">{displayPrefix}</span>
+          <span
+            className={`text-lg font-bold ${
+              isLight ? 'text-[#78716C]' : 'text-gray-400'
+            }`}
+          >
+            {displayPrefix}
+          </span>
         )}
         <span
           className={`
-            bg-clip-text text-transparent bg-gradient-to-r from-white via-cyan-200 to-cyan-400
+            ${
+              isLight
+                ? 'text-[#1C1917]'
+                : 'bg-clip-text text-transparent bg-gradient-to-r from-white via-cyan-200 to-cyan-400'
+            }
             tracking-tight leading-none
             ${sizeClasses.value}
             ${valueClassName}
@@ -77,7 +92,13 @@ export function Counter({
           {displayValue}
         </span>
         {displaySuffix && !String(displayValue).endsWith(displaySuffix) && (
-          <span className="text-cyan-400 font-bold">{displaySuffix}</span>
+          <span
+            className={`font-bold ${
+              isLight ? 'text-[#5865F2]' : 'text-cyan-400'
+            }`}
+          >
+            {displaySuffix}
+          </span>
         )}
 
         {/* Small mandatory "sample data" indicator tag */}
@@ -94,13 +115,21 @@ export function Counter({
 
       {/* Label and Subtext */}
       {displayLabel && (
-        <span className={`text-gray-400 font-bold mt-2 ${sizeClasses.label}`}>
+        <span
+          className={`font-bold mt-2 ${sizeClasses.label} ${
+            isLight ? 'text-[#57534E]' : 'text-gray-400'
+          }`}
+        >
           {displayLabel}
         </span>
       )}
 
       {displayDescription && (
-        <span className="text-gray-500 text-xs font-sans mt-0.5 line-clamp-2">
+        <span
+          className={`text-xs font-sans mt-0.5 line-clamp-2 ${
+            isLight ? 'text-[#78716C]' : 'text-gray-500'
+          }`}
+        >
           {displayDescription}
         </span>
       )}

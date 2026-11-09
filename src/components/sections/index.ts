@@ -5,3 +5,5 @@
 
 export * from './Hero';
 export * from './PromptDemo';
+export * from './ServicesShowcase';
+export * from './Pricing';

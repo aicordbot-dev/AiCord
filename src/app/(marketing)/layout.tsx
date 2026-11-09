@@ -2,23 +2,20 @@
 
 /**
  * src/app/(marketing)/layout.tsx
- * Marketing Layout containing Lenis Smooth Scroll Provider, Navigation Header,
- * Main Viewport, Persistent 3D WebGL Scene, and Platform Footer with verified tech stack.
+ * Ultra-clean, minimal warm cream marketing layout for AiCord.
+ * 100% lightweight 2D CSS + GSAP animations (NO heavy 3D WebGL in the background).
+ * Includes Preloader, Minimal Floating Navbar, Main Viewport,
+ * Discord OAuth2 Permission Modal, and Categorized Minimal Footer.
  */
 
 import React, { useState } from 'react';
-import Link from 'next/link';
 import { LenisProvider } from '@/lib/lenis-provider';
-import { useGpuTier } from '@/lib/use-gpu-tier';
-import { Scene } from '@/components/three/Scene';
-import { ThemePicker } from '@/components/ui/ThemePicker';
-import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
-import { UserNav } from '@/components/navbar/UserNav';
+import { Preloader } from '@/components/ui/Preloader';
+import { Navbar } from '@/components/layout/Navbar';
+import { Footer } from '@/components/layout/Footer';
 import { AiCordMark } from '@/components/brand/AiCordMark';
 import { siteConfig } from '@/config/site';
-import { copyConfig } from '@/config/copy';
-import { statsConfig } from '@/config/stats';
+import { Button } from '@/components/ui/Button';
 
 export default function MarketingLayout({
   children,
@@ -26,11 +23,7 @@ export default function MarketingLayout({
   children: React.ReactNode;
 }) {
   const [showInviteModal, setShowInviteModal] = useState(false);
-  const [soundEnabled, setSoundEnabled] = useState(false);
   const [permissionType, setPermissionType] = useState<'admin' | 'recommended'>('admin');
-
-  // Detect and synchronize GPU capability tier on mount
-  useGpuTier();
 
   const inviteUrl = siteConfig.getInviteUrl(
     permissionType === 'admin' ? '8' : '534723950656'
@@ -38,246 +31,115 @@ export default function MarketingLayout({
 
   return (
     <LenisProvider>
-      <div className="min-h-screen bg-[#070913] text-gray-100 relative overflow-hidden flex flex-col">
-        {/* ─── Persistent 3D WebGL Background Scene ────────────────────────────── */}
-        <div className="fixed inset-0 pointer-events-none z-0">
-          <Scene />
+      <div className="min-h-screen bg-[#FDFBF7] text-[#1C1917] relative overflow-x-hidden flex flex-col font-sans selection:bg-[#5865F2]/20 selection:text-[#5865F2]">
+        {/* ─── Minimal Full-Screen Preloader ────────────────────────────────────── */}
+        <Preloader />
+
+        {/* ─── Ambient 2D Warm Glow Orbs (Pure CSS, 0 GPU overhead) ─────────────── */}
+        <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+          {/* Subtle warm dot grid pattern */}
+          <div
+            className="absolute inset-0 opacity-[0.35]"
+            style={{
+              backgroundImage: 'radial-gradient(#D6CFC4 1px, transparent 1px)',
+              backgroundSize: '28px 28px',
+            }}
+          />
+
+          {/* Champagne / Amber top orb */}
+          <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[900px] h-[550px] bg-gradient-to-b from-amber-100/50 via-orange-100/30 to-transparent blur-[120px] rounded-full animate-pulse-glow" />
+
+          {/* Soft lavender left orb */}
+          <div className="absolute top-[800px] -left-48 w-[600px] h-[600px] bg-purple-100/40 blur-[130px] rounded-full" />
+
+          {/* Soft sky-blue right orb */}
+          <div className="absolute top-[1700px] -right-48 w-[600px] h-[600px] bg-sky-100/40 blur-[130px] rounded-full" />
         </div>
 
-        {/* ─── Ambient Glow Blobs ────────────────────────────────────────────────── */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-gradient-to-b from-cyan-600/10 via-purple-600/5 to-transparent blur-[140px] pointer-events-none z-0" />
-        <div className="absolute top-[800px] -left-64 w-[500px] h-[500px] bg-purple-600/5 blur-[150px] pointer-events-none z-0" />
-        <div className="absolute top-[1800px] -right-64 w-[500px] h-[500px] bg-cyan-600/5 blur-[150px] pointer-events-none z-0" />
-
-        {/* ─── Navigation Header ────────────────────────────────────────────────── */}
-        <header className="sticky top-0 z-40 w-full backdrop-blur-xl bg-[#070913]/80 border-b border-white/10">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
-            {/* Brand Logo */}
-            <Link href="/" className="flex items-center gap-3 group shrink-0">
-              <div className="w-10 h-10 shrink-0 shadow-lg shadow-cyan-500/20 group-hover:shadow-cyan-500/40 transition-all duration-300 group-hover:scale-105">
-                <AiCordMark size={40} variant="tile" />
-              </div>
-              <div>
-                <span className="text-xl font-extrabold tracking-tight text-white flex items-center gap-1.5 font-mono">
-                  <span className="text-[#22D3EE]">Ai</span>Cord
-                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
-                    v{siteConfig.version}
-                  </span>
-                </span>
-                <span className="text-[10px] font-mono text-gray-400 block -mt-1">
-                  Discord AI Architect
-                </span>
-              </div>
-            </Link>
-
-            {/* Desktop Navigation Links */}
-            <nav className="hidden lg:flex items-center gap-8 text-xs font-mono text-gray-300">
-              <a href="#features" className="hover:text-cyan-400 transition-colors">
-                Features
-              </a>
-              <a href="#themes" className="hover:text-cyan-400 transition-colors">
-                Themes
-              </a>
-              <a href="#pricing" className="hover:text-cyan-400 transition-colors">
-                Pricing
-              </a>
-              <a href="#faq" className="hover:text-cyan-400 transition-colors">
-                Docs &amp; FAQ
-              </a>
-            </nav>
-
-            {/* Right Control Bar */}
-            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-              {/* In-Navbar Theme Switcher */}
-              <ThemePicker variant="navbar" />
-
-              {/* User Session Nav */}
-              <UserNav />
-
-              {/* Add to Discord CTA */}
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => setShowInviteModal(true)}
-                icon={<span>⚡</span>}
-              >
-                Add to Discord
-              </Button>
-            </div>
-          </div>
-        </header>
+        {/* ─── Floating Minimal Navbar Header ───────────────────────────────────── */}
+        <Navbar onOpenInvite={() => setShowInviteModal(true)} />
 
         {/* ─── Main Content Viewport ────────────────────────────────────────────── */}
         <main className="relative z-10 flex-1">{children}</main>
 
-        {/* ─── Platform Footer ─────────────────────────────────────────────────── */}
-        <footer className="border-t border-white/10 bg-[#05070e] py-12 px-4 sm:px-6 lg:px-8 relative z-20">
-          <div className="max-w-7xl mx-auto space-y-8">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-8">
-              {/* Brand and Description */}
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 shrink-0 shadow-md">
-                  <AiCordMark size={40} variant="tile" />
-                </div>
-                <div>
-                  <span className="font-bold text-white text-base font-mono">
-                    <span className="text-[#22D3EE]">Ai</span>Cord Platform
-                  </span>
-                  <span className="text-xs text-gray-400 block font-mono">
-                    {copyConfig.footer.copyright}
-                  </span>
-                </div>
-              </div>
-
-              {/* Sound Toggle Placeholder */}
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setSoundEnabled(!soundEnabled)}
-                  className={`
-                    px-3 py-1.5 rounded-xl border font-mono text-xs transition-all flex items-center gap-2
-                    ${
-                      soundEnabled
-                        ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40'
-                        : 'bg-white/5 text-gray-400 border-white/10 hover:text-white'
-                    }
-                  `}
-                  title="Toggle immersive ambient spatial soundscape"
-                >
-                  <span>{soundEnabled ? '🔊 Audio: On' : '🔇 Audio: Muted'}</span>
-                </button>
-              </div>
-
-              {/* Quick Navigation Links */}
-              <div className="flex flex-wrap items-center justify-center gap-6 text-xs font-mono text-gray-400">
-                <a href="#features" className="hover:text-cyan-400 transition-colors">
-                  Features
-                </a>
-                <a href="#themes" className="hover:text-cyan-400 transition-colors">
-                  Themes
-                </a>
-                <a href="#pricing" className="hover:text-cyan-400 transition-colors">
-                  Pricing
-                </a>
-                <a
-                  href={siteConfig.links.github}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="hover:text-cyan-400 transition-colors"
-                >
-                  GitHub
-                </a>
-                <button
-                  onClick={() => setShowInviteModal(true)}
-                  className="text-cyan-400 hover:underline"
-                >
-                  Invite Bot
-                </button>
-              </div>
-            </div>
-
-            {/* Tech Stack Badges Row */}
-            <div className="pt-6 border-t border-white/5 flex flex-wrap items-center justify-center gap-2 text-xs font-mono">
-              <span className="px-3 py-1 rounded-lg bg-white/5 border border-white/10 text-gray-300">
-                ⚡ Next.js 16
-              </span>
-              <span className="px-3 py-1 rounded-lg bg-white/5 border border-white/10 text-cyan-300">
-                🌐 Three.js WebGL
-              </span>
-              <span className="px-3 py-1 rounded-lg bg-white/5 border border-white/10 text-purple-300">
-                📜 GSAP + Lenis
-              </span>
-              <span className="px-3 py-1 rounded-lg bg-white/5 border border-white/10 text-emerald-300">
-                🍃 MongoDB Atlas
-              </span>
-              <span className="px-3 py-1 rounded-lg bg-white/5 border border-white/10 text-sky-300">
-                🎨 Tailwind CSS v4
-              </span>
-              <span className="px-3 py-1 rounded-lg bg-white/5 border border-white/10 text-yellow-300">
-                ✨ Google Gemini AI
-              </span>
-              <span className="px-3 py-1 rounded-lg bg-white/5 border border-white/10 text-pink-300">
-                🔐 Ed25519 Webhooks
-              </span>
-            </div>
-
-            {/* Mandatory Sample Data Disclaimer Notice */}
-            <div className="text-center pt-2">
-              <p className="text-[11px] font-mono text-gray-500 max-w-2xl mx-auto flex items-center justify-center gap-2">
-                <Badge status="sample" size="sm">
-                  {statsConfig.sampleLabel}
-                </Badge>
-                <span>{copyConfig.footer.counterNotice}</span>
-              </p>
-            </div>
-          </div>
-        </footer>
+        {/* ─── Minimal Footer ───────────────────────────────────────────────────── */}
+        <Footer onOpenInvite={() => setShowInviteModal(true)} />
 
         {/* ─── Discord OAuth2 Permission Modal ──────────────────────────────────── */}
         {showInviteModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-            <div className="w-full max-w-md rounded-3xl bg-[#0f1424] border border-white/20 p-6 shadow-2xl relative">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="invite-modal-title"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200"
+          >
+            <div className="w-full max-w-md rounded-3xl bg-white border border-[#E7E2DA] p-6 sm:p-7 shadow-2xl relative">
               <button
                 onClick={() => setShowInviteModal(false)}
-                className="absolute top-4 right-4 text-gray-400 hover:text-white text-lg font-mono p-1"
+                className="absolute top-4 right-4 text-[#78716C] hover:text-[#1C1917] text-lg font-mono p-1.5 rounded-lg hover:bg-stone-100 transition-colors"
                 aria-label="Close dialog"
               >
                 ✕
               </button>
 
               <div className="text-center mb-6">
-                <div className="w-14 h-14 mx-auto mb-3 shadow-lg shadow-cyan-500/30">
-                  <AiCordMark size={56} variant="tile" />
+                <div className="w-14 h-14 mx-auto mb-3 rounded-2xl bg-[#FDFBF7] border border-[#E7E2DA] shadow-sm flex items-center justify-center">
+                  <AiCordMark size={40} variant="tile" glow={false} />
                 </div>
-                <h3 className="text-2xl font-black text-white font-mono">
+                <h3 id="invite-modal-title" className="text-2xl font-black text-[#1C1917] font-mono">
                   Invite AiCord to Discord
                 </h3>
-                <p className="text-xs text-gray-400 font-mono mt-1">
-                  Client ID: {siteConfig.discordClientId}
+                <p className="text-xs text-[#78716C] font-mono mt-1">
+                  Application ID: {siteConfig.discordClientId}
                 </p>
               </div>
 
               <div className="space-y-3 mb-6 font-mono text-xs">
-                <label className="text-gray-400 uppercase tracking-wider block">
+                <label className="text-[#78716C] uppercase tracking-wider block text-[11px] font-bold">
                   Select Permission Scope:
                 </label>
 
                 <div
                   onClick={() => setPermissionType('admin')}
                   className={`
-                    p-3.5 rounded-xl border cursor-pointer transition-all
+                    p-3.5 rounded-2xl border cursor-pointer transition-all
                     ${
                       permissionType === 'admin'
-                        ? 'border-cyan-500 bg-cyan-500/10 text-white'
-                        : 'border-white/10 bg-white/5 text-gray-400 hover:border-white/20'
+                        ? 'border-[#5865F2] bg-[#5865F2]/5 text-[#1C1917] shadow-sm'
+                        : 'border-[#E7E2DA] bg-[#FDFBF7] text-[#57534E] hover:border-stone-400'
                     }
                   `}
                 >
                   <div className="flex items-center justify-between font-bold">
                     <span>👑 Administrator (Full Sync)</span>
-                    <span className="text-[10px] text-cyan-400">permissions=8</span>
+                    <span className="text-[10px] text-[#5865F2] bg-[#5865F2]/10 px-2 py-0.5 rounded-full font-bold">
+                      permissions=8
+                    </span>
                   </div>
-                  <p className="text-[11px] text-gray-400 font-sans mt-1">
-                    Required for complete automated /build architecture, channel provisioning, and instant permission overwriting.
+                  <p className="text-[11px] text-[#78716C] font-sans mt-1.5 leading-relaxed">
+                    Recommended for instantaneous automated /build synthesis, channel provisioning, and permission matrix sync.
                   </p>
                 </div>
 
                 <div
                   onClick={() => setPermissionType('recommended')}
                   className={`
-                    p-3.5 rounded-xl border cursor-pointer transition-all
+                    p-3.5 rounded-2xl border cursor-pointer transition-all
                     ${
                       permissionType === 'recommended'
-                        ? 'border-cyan-500 bg-cyan-500/10 text-white'
-                        : 'border-white/10 bg-white/5 text-gray-400 hover:border-white/20'
+                        ? 'border-[#5865F2] bg-[#5865F2]/5 text-[#1C1917] shadow-sm'
+                        : 'border-[#E7E2DA] bg-[#FDFBF7] text-[#57534E] hover:border-stone-400'
                     }
                   `}
                 >
                   <div className="flex items-center justify-between font-bold">
                     <span>🛡️ Granular Least-Privilege</span>
-                    <span className="text-[10px] text-cyan-400">permissions=534723950656</span>
+                    <span className="text-[10px] text-[#059669] bg-[#059669]/10 px-2 py-0.5 rounded-full font-bold">
+                      permissions=534723950656
+                    </span>
                   </div>
-                  <p className="text-[11px] text-gray-400 font-sans mt-1">
-                    Manage Channels, Manage Roles, Moderation, Voice connect, and standard messaging.
+                  <p className="text-[11px] text-[#78716C] font-sans mt-1.5 leading-relaxed">
+                    Grants Manage Channels, Manage Roles, Moderation, Voice connect, and standard slash messaging.
                   </p>
                 </div>
               </div>
@@ -288,7 +150,7 @@ export default function MarketingLayout({
                   size="md"
                   href={inviteUrl}
                   external
-                  className="w-full justify-center"
+                  className="w-full justify-center !bg-[#5865F2] hover:!bg-[#4752C4] !text-white !shadow-md !shadow-[#5865F2]/25 font-bold"
                 >
                   Authorize Bot on Discord ↗
                 </Button>
