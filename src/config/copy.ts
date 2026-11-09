@@ -1,7 +1,7 @@
 /**
  * src/config/copy.ts
  * Master marketing and promotional copy catalog.
- * Follows section 8 of the specification.
+ * Follows Section 8 of the AiCord Master Specification.
  */
 
 export interface SectionCopy {
@@ -19,10 +19,19 @@ export interface CopyConfig {
     sub: string;
     ctaPrimary: string;
     ctaSecondary: string;
+    ctaSecondaryLoggedIn: string;
     sampleCommand: {
       command: string;
       prompt: string;
     };
+  };
+  promptDemo: {
+    badge: string;
+    title: string;
+    subtitle: string;
+    description: string;
+    undoButton: string;
+    deployButton: string;
   };
   constellation: {
     badge: string;
@@ -66,13 +75,24 @@ export const copyConfig: CopyConfig = {
     h1: 'Your Discord server, built by AI in minutes.',
     h1Prefix: 'Your Discord server,',
     h1Highlight: 'built by AI in minutes.',
-    sub: 'Synthesize full category layouts, permission overrides, and automod in seconds from a single prompt. Style interactive profiles with 6 universal themes, and supercharge your guild with 28+ zero-bloat enterprise services.',
+    sub: 'Describe your community. AiCord designs the channels, roles and permissions, then runs 18 services on top: tickets, levels, economy, games and moderation. Synthesize full category layouts, permission overrides, and automod in seconds from a single prompt.',
     ctaPrimary: 'Add to Discord',
-    ctaSecondary: 'Launch 3D Sandbox',
+    ctaSecondary: 'Login with Discord',
+    ctaSecondaryLoggedIn: 'Open dashboard',
     sampleCommand: {
       command: '/build',
       prompt: 'prompt:"Esports tournament guild with scrim voice rooms and verified rank gates"',
     },
+  },
+  promptDemo: {
+    badge: 'INTERACTIVE ARCHITECTURE PREVIEW',
+    title: 'Describe it. AiCord builds it.',
+    subtitle:
+      'Review the structure, audit the permissions, then deploy with one click. Not happy? Undo it.',
+    description:
+      'Watch AiCord turn a single natural language description into an enterprise-grade Discord server with full role hierarchies, automod security gates, and zero-bloat services.',
+    undoButton: 'Undo Build / Rollback',
+    deployButton: 'Deploy Blueprint to Server',
   },
   constellation: {
     badge: 'DYNAMIC CONSTELLATION MESH',

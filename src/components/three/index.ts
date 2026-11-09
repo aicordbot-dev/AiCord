@@ -1,6 +1,6 @@
 /**
  * src/components/three/index.ts
- * Public exports for AiCord Phase C 3D Core WebGL architecture.
+ * Public exports for AiCord Phase C 3D Core WebGL architecture & Phase D Blueprint Nodes.
  */
 
 export * from './Scene';
@@ -9,6 +9,7 @@ export * from './SceneController';
 export * from './CameraRig';
 export * from './BrandMark';
 export * from './Particles';
+export * from './BlueprintNodes';
 export * from './Environment';
 export * from './Effects';
 export * from './PerformanceMonitorBridge';

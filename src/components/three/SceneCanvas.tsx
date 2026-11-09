@@ -17,6 +17,7 @@ import { SceneController } from './SceneController';
 import { CameraRig } from './CameraRig';
 import { BrandMark } from './BrandMark';
 import { Particles } from './Particles';
+import { BlueprintNodes } from './BlueprintNodes';
 import { Environment } from './Environment';
 import { Effects } from './Effects';
 import { PerformanceMonitorBridge } from './PerformanceMonitorBridge';
@@ -123,6 +124,7 @@ export function SceneCanvas() {
         <CameraRig />
         <BrandMark />
         <Particles />
+        <BlueprintNodes />
         <Environment />
         <Effects />
         <PerformanceMonitorBridge />
