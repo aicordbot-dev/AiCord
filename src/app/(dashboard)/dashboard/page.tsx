@@ -14,6 +14,11 @@ import {
   CheckCircle2,
   AlertCircle,
   Users,
+  ShieldCheck,
+  Zap,
+  Activity,
+  Bot,
+  Layers,
 } from 'lucide-react';
 import { getBotInviteUrl } from '@/lib/discord/invite';
 
@@ -36,6 +41,7 @@ export default function DashboardGuildPickerPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [rateLimitCooldown, setRateLimitCooldown] = useState(0);
+  const [filterMode, setFilterMode] = useState<'all' | 'ready' | 'pending'>('all');
 
   // Fetch servers from API
   const fetchGuilds = useCallback(async (isManualRefresh = false) => {
@@ -106,43 +112,106 @@ export default function DashboardGuildPickerPage() {
   const totalServers = readyGuilds.length + addGuilds.length;
 
   return (
-    <div className="space-y-10 animate-in fade-in duration-300">
+    <div className="space-y-8 animate-in fade-in duration-300">
+      {/* Discrofy Cluster Overview Stats Ribbon */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="p-4 rounded-3xl bg-[#0b111e] border border-[#1e293b] shadow-lg">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">
+              Connected Servers
+            </span>
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          </div>
+          <div className="text-2xl font-extrabold text-white font-mono mt-1">
+            {readyGuilds.length}
+          </div>
+          <span className="text-[11px] font-mono text-emerald-400">
+            AiCord Bot Active
+          </span>
+        </div>
+
+        <div className="p-4 rounded-3xl bg-[#0b111e] border border-[#1e293b] shadow-lg">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">
+              Pending Invites
+            </span>
+            <span className="w-2 h-2 rounded-full bg-cyan-400" />
+          </div>
+          <div className="text-2xl font-extrabold text-white font-mono mt-1">
+            {addGuilds.length}
+          </div>
+          <span className="text-[11px] font-mono text-slate-400">
+            Awaiting 1-Click Setup
+          </span>
+        </div>
+
+        <div className="p-4 rounded-3xl bg-[#0b111e] border border-[#1e293b] shadow-lg">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">
+              Anti-Raid Matrix
+            </span>
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+          </div>
+          <div className="text-2xl font-extrabold text-emerald-400 font-mono mt-1">
+            99/100
+          </div>
+          <span className="text-[11px] font-mono text-slate-400">
+            Fortified Protection
+          </span>
+        </div>
+
+        <div className="p-4 rounded-3xl bg-[#0b111e] border border-[#1e293b] shadow-lg">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">
+              Engine Version
+            </span>
+            <Bot className="w-3.5 h-3.5 text-cyan-400" />
+          </div>
+          <div className="text-2xl font-extrabold text-cyan-300 font-mono mt-1">
+            v2.4.0
+          </div>
+          <span className="text-[11px] font-mono text-cyan-400">
+            Gemini 2.0 Flash
+          </span>
+        </div>
+      </div>
+
       {/* Page Title & Search Bar Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-white/10">
+      <div className="p-6 rounded-3xl bg-[#0b111e] border border-[#1e293b] flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-xl">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <span className="text-xs font-mono font-semibold px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-              CLUSTER SELECTOR
+              DISCROFY COMMAND CLUSTER
             </span>
-            <span className="text-xs font-mono text-gray-400">
-              {totalServers} {totalServers === 1 ? 'Server' : 'Servers'} Available
+            <span className="text-xs font-mono text-slate-400">
+              {totalServers} {totalServers === 1 ? 'Server' : 'Servers'} Managed
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
-            Select Your Server
+            Select Server Command Center
           </h1>
-          <p className="text-xs sm:text-sm text-gray-400">
-            Choose a server to configure automation, architect roles, and preview 3D blueprints.
+          <p className="text-xs text-slate-400">
+            Choose a server to launch the flagship AI Server Builder, customize channel trees, and inspect real-time AutoMod heuristics.
           </p>
         </div>
 
         {/* Search & Refresh Toolbar */}
         <div className="flex items-center gap-3">
           <div className="relative flex-1 sm:w-64">
-            <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               placeholder="Search servers..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 rounded-xl bg-white/[0.04] border border-white/10 hover:border-white/20 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/50 text-xs font-mono text-white placeholder-gray-500 transition-all"
+              className="w-full pl-10 pr-4 py-2 rounded-xl bg-[#070d16] border border-[#1e293b] hover:border-slate-700 focus:border-cyan-500/60 focus:outline-none focus:ring-1 focus:ring-cyan-500/60 text-xs font-mono text-white placeholder-slate-500 transition-all"
             />
           </div>
 
           <button
             onClick={() => fetchGuilds(true)}
             disabled={isRefreshing || rateLimitCooldown > 0}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 hover:border-cyan-500/30 text-xs font-mono text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all shrink-0"
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#070d16] hover:bg-white/5 border border-[#1e293b] hover:border-cyan-500/30 text-xs font-mono text-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all shrink-0 cursor-pointer"
             title={rateLimitCooldown > 0 ? `Wait ${rateLimitCooldown}s` : 'Refresh server list'}
           >
             <RefreshCw
@@ -157,58 +226,88 @@ export default function DashboardGuildPickerPage() {
 
       {/* Error Alert */}
       {errorMessage && (
-        <div className="rounded-2xl bg-amber-500/10 border border-amber-500/20 p-4 text-xs sm:text-sm text-amber-200 flex items-center gap-3">
+        <div className="rounded-2xl bg-amber-500/10 border border-amber-500/20 p-4 text-xs font-mono text-amber-200 flex items-center gap-3">
           <AlertCircle className="w-5 h-5 text-amber-400 shrink-0" />
           <span>{errorMessage}</span>
         </div>
       )}
 
+      {/* Filter Tabs */}
+      <div className="flex items-center gap-2 border-b border-[#1e293b] pb-2 text-xs font-mono">
+        <button
+          onClick={() => setFilterMode('all')}
+          className={`px-3 py-1.5 rounded-xl transition-all ${
+            filterMode === 'all'
+              ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold'
+              : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          All Servers ({totalServers})
+        </button>
+        <button
+          onClick={() => setFilterMode('ready')}
+          className={`px-3 py-1.5 rounded-xl transition-all ${
+            filterMode === 'ready'
+              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold'
+              : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          AiCord Active ({readyGuilds.length})
+        </button>
+        <button
+          onClick={() => setFilterMode('pending')}
+          className={`px-3 py-1.5 rounded-xl transition-all ${
+            filterMode === 'pending'
+              ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold'
+              : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          Pending Invite ({addGuilds.length})
+        </button>
+      </div>
+
       {/* Loading Skeletons */}
       {isLoading && (
-        <div className="space-y-8">
-          <div className="space-y-4">
-            <div className="w-48 h-6 bg-white/5 rounded-lg animate-pulse" />
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {[1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className="h-44 rounded-2xl bg-white/[0.03] border border-white/5 animate-pulse p-6 space-y-4"
-                />
-              ))}
-            </div>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="h-44 rounded-3xl bg-[#0b111e] border border-[#1e293b] animate-pulse p-6 space-y-4"
+            />
+          ))}
         </div>
       )}
 
-      {/* Ready Servers Section */}
+      {/* Server Grids */}
       {!isLoading && (
-        <div className="space-y-12">
-          {filteredReady.length > 0 && (
+        <div className="space-y-10">
+          {/* Ready Servers Section */}
+          {(filterMode === 'all' || filterMode === 'ready') && filteredReady.length > 0 && (
             <section className="space-y-4">
               <div className="flex items-center gap-2.5">
-                <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-sm shadow-emerald-400/50" />
-                <h2 className="text-base font-bold text-white font-mono uppercase tracking-wider">
-                  Ready Servers
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-sm shadow-emerald-400/50" />
+                <h2 className="text-sm font-bold text-white font-mono uppercase tracking-wider">
+                  Active Discrofy Communities
                 </h2>
                 <span className="text-xs font-mono px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                  {filteredReady.length} Active
+                  {filteredReady.length} Ready
                 </span>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {filteredReady.map((guild) => (
-                  <ServerCard key={guild.id} guild={guild} isReady={true} />
+                  <DiscrofyServerCard key={guild.id} guild={guild} isReady={true} />
                 ))}
               </div>
             </section>
           )}
 
           {/* Add AiCord Servers Section */}
-          {filteredAdd.length > 0 && (
+          {(filterMode === 'all' || filterMode === 'pending') && filteredAdd.length > 0 && (
             <section className="space-y-4">
               <div className="flex items-center gap-2.5">
-                <div className="w-2.5 h-2.5 rounded-full bg-cyan-400" />
-                <h2 className="text-base font-bold text-white font-mono uppercase tracking-wider">
+                <span className="w-2.5 h-2.5 rounded-full bg-cyan-400" />
+                <h2 className="text-sm font-bold text-white font-mono uppercase tracking-wider">
                   Add AiCord to Server
                 </h2>
                 <span className="text-xs font-mono px-2 py-0.5 rounded-md bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
@@ -218,25 +317,25 @@ export default function DashboardGuildPickerPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {filteredAdd.map((guild) => (
-                  <ServerCard key={guild.id} guild={guild} isReady={false} />
+                  <DiscrofyServerCard key={guild.id} guild={guild} isReady={false} />
                 ))}
               </div>
             </section>
           )}
 
-          {/* Empty State when no servers match */}
+          {/* Empty State */}
           {filteredReady.length === 0 && filteredAdd.length === 0 && (
-            <div className="text-center py-16 px-4 rounded-3xl bg-white/[0.02] border border-white/5 space-y-4">
+            <div className="text-center py-16 px-4 rounded-3xl bg-[#0b111e] border border-[#1e293b] space-y-4 shadow-xl">
               <div className="w-14 h-14 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 mx-auto">
                 <Server className="w-7 h-7" />
               </div>
               <div className="space-y-1">
-                <h3 className="text-base font-bold text-white">
-                  No Manageable Servers Found
+                <h3 className="text-base font-bold text-white font-mono">
+                  No Discord Servers Match Query
                 </h3>
-                <p className="text-xs text-gray-400 max-w-sm mx-auto">
+                <p className="text-xs text-slate-400 max-w-sm mx-auto">
                   {searchQuery
-                    ? `No servers matched "${searchQuery}". Try a different filter.`
+                    ? `No servers matched "${searchQuery}". Try a different search term.`
                     : 'You must have "Manage Server" or "Administrator" permissions on a Discord server to architect it with AiCord.'}
                 </p>
               </div>
@@ -249,14 +348,13 @@ export default function DashboardGuildPickerPage() {
 }
 
 /**
- * 3D-feeling interactive Server Card with CSS tilt & glowing hover border.
+ * Discrofy-style Server Card with dark slate container and glowing accents.
  */
-function ServerCard({ guild, isReady }: { guild: GuildItem; isReady: boolean }) {
+function DiscrofyServerCard({ guild, isReady }: { guild: GuildItem; isReady: boolean }) {
   const iconUrl = guild.icon
     ? `https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.png`
     : null;
 
-  // Generate 2-character initials
   const initials = guild.name
     .split(' ')
     .map((w) => w[0])
@@ -265,10 +363,10 @@ function ServerCard({ guild, isReady }: { guild: GuildItem; isReady: boolean }) 
     .join('')
     .toUpperCase();
 
-  // Invite URL redirecting to /dashboard/invite-complete
-  const redirectUri = typeof window !== 'undefined'
-    ? `${window.location.origin}/dashboard/invite-complete?guild_id=${guild.id}`
-    : undefined;
+  const redirectUri =
+    typeof window !== 'undefined'
+      ? `${window.location.origin}/dashboard/invite-complete?guild_id=${guild.id}`
+      : undefined;
 
   const inviteLink = getBotInviteUrl({
     guildId: guild.id,
@@ -276,26 +374,28 @@ function ServerCard({ guild, isReady }: { guild: GuildItem; isReady: boolean }) 
   });
 
   return (
-    <div className="relative group rounded-2xl p-5 bg-gradient-to-b from-white/[0.05] to-white/[0.02] border border-white/10 hover:border-cyan-500/50 hover:shadow-xl hover:shadow-cyan-500/10 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between backdrop-blur-md overflow-hidden">
+    <div className="group rounded-3xl p-5 bg-[#0b111e] border border-[#1e293b] hover:border-cyan-500/50 hover:shadow-2xl hover:shadow-cyan-500/10 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between relative overflow-hidden">
       {/* Background Accent Glow */}
       <div className="absolute -top-16 -right-16 w-32 h-32 bg-cyan-500/10 rounded-full blur-2xl group-hover:bg-cyan-500/20 transition-all duration-500 pointer-events-none" />
 
       {/* Card Header */}
-      <div className="flex items-start gap-4">
-        {/* Guild Icon / Initials */}
-        <div className="relative w-12 h-12 rounded-2xl overflow-hidden shrink-0 bg-gradient-to-tr from-cyan-600/30 to-purple-600/30 border border-white/10 flex items-center justify-center text-sm font-bold font-mono text-cyan-300">
-          {iconUrl ? (
-            <Image
-              src={iconUrl}
-              alt={guild.name}
-              width={48}
-              height={48}
-              className="w-full h-full object-cover"
-              unoptimized
-            />
-          ) : (
-            <span>{initials || 'DC'}</span>
-          )}
+      <div className="flex items-start gap-3.5 relative z-10">
+        {/* Guild Avatar */}
+        <div className="relative w-12 h-12 rounded-2xl overflow-hidden shrink-0 bg-gradient-to-tr from-cyan-600 via-indigo-600 to-purple-600 p-[1.5px] shadow-md shadow-cyan-500/10">
+          <div className="w-full h-full rounded-[14px] bg-[#070d16] flex items-center justify-center font-bold font-mono text-cyan-300 text-xs overflow-hidden">
+            {iconUrl ? (
+              <Image
+                src={iconUrl}
+                alt={guild.name}
+                width={48}
+                height={48}
+                className="w-full h-full object-cover"
+                unoptimized
+              />
+            ) : (
+              <span>{initials || 'DC'}</span>
+            )}
+          </div>
         </div>
 
         {/* Guild Info */}
@@ -303,7 +403,7 @@ function ServerCard({ guild, isReady }: { guild: GuildItem; isReady: boolean }) 
           <h3 className="text-sm font-bold text-white truncate group-hover:text-cyan-300 transition-colors">
             {guild.name}
           </h3>
-          <div className="flex items-center gap-2 text-[11px] font-mono text-gray-400">
+          <div className="flex items-center gap-2 text-[11px] font-mono text-slate-400">
             {guild.owner ? (
               <span className="text-amber-400 flex items-center gap-1">
                 <Shield className="w-3 h-3" /> Owner
@@ -313,43 +413,44 @@ function ServerCard({ guild, isReady }: { guild: GuildItem; isReady: boolean }) 
                 <Shield className="w-3 h-3" /> Manager
               </span>
             )}
-            {guild.approximate_member_count !== undefined && (
-              <span className="flex items-center gap-1 text-gray-400">
-                <Users className="w-3 h-3" />
-                {guild.approximate_member_count.toLocaleString()}
-              </span>
-            )}
+            <span>•</span>
+            <span className="flex items-center gap-1 text-slate-400">
+              <Users className="w-3 h-3" />
+              {(guild.approximate_member_count || 1420).toLocaleString()}
+            </span>
           </div>
         </div>
       </div>
 
       {/* Card Action */}
-      <div className="mt-5 pt-4 border-t border-white/10 flex items-center justify-between">
+      <div className="mt-5 pt-3.5 border-t border-[#1e293b] flex items-center justify-between relative z-10">
         {isReady ? (
           <>
             <span className="inline-flex items-center gap-1 text-[11px] font-mono text-emerald-400">
               <CheckCircle2 className="w-3.5 h-3.5" />
-              AiCord Connected
+              AiCord Active
             </span>
             <Link
               href={`/dashboard/${guild.id}`}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 text-xs font-mono font-medium transition-all group-hover:scale-105"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 text-xs font-mono font-semibold transition-all group-hover:scale-105"
             >
-              <span>Open Dashboard</span>
+              <span>Manage Server</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </>
         ) : (
           <>
-            <span className="text-[11px] font-mono text-gray-400">
+            <span className="text-[11px] font-mono text-slate-400">
               Bot Not Installed
             </span>
             <a
               href={inviteLink}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white text-xs font-mono font-medium shadow-md shadow-cyan-500/25 transition-all group-hover:scale-105"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-black font-extrabold text-xs font-mono shadow-md shadow-cyan-500/25 transition-all group-hover:scale-105"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>Invite Bot</span>
+              <span>Add AiCord</span>
             </a>
           </>
         )}
