@@ -15,6 +15,8 @@ export interface SiteConfig {
     github: string;
     discord: string;
     docs: string;
+    status: string;
+    changelog: string;
     privacy: string;
     terms: string;
   };
@@ -36,7 +38,9 @@ export const siteConfig: SiteConfig = {
   links: {
     github: 'https://github.com/aicordbot-dev/AiCord',
     discord: 'https://discord.gg/aicord',
-    docs: '#faq',
+    docs: '/docs',
+    status: '/status',
+    changelog: '/changelog',
     privacy: '/privacy',
     terms: '/terms',
   },

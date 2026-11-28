@@ -43,14 +43,17 @@ export function Footer({ onOpenInvite }: FooterProps) {
             </p>
 
             {/* Live Operational Status Indicator */}
-            <div className="inline-flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-white border border-[#E7E2DA] shadow-xs text-xs font-mono text-[#1C1917]">
+            <Link
+              href="/status"
+              className="inline-flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-white hover:bg-stone-50 border border-[#E7E2DA] hover:border-[#5865F2]/40 shadow-xs text-xs font-mono text-[#1C1917] transition-all group"
+            >
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
               </span>
-              <span className="font-semibold text-[11px]">All Systems Operational</span>
-              <span className="text-[#A8A29E] text-[10px]">• 99.98% uptime</span>
-            </div>
+              <span className="font-semibold text-[11px] group-hover:text-[#5865F2] transition-colors">All Systems Operational</span>
+              <span className="text-[#A8A29E] text-[10px]">• 99.98% uptime ↗</span>
+            </Link>
           </div>
 
           {/* Column 2: Product */}
@@ -112,12 +115,32 @@ export function Footer({ onOpenInvite }: FooterProps) {
 
           {/* Column 4: Resources & Legal */}
           <div className="space-y-3 font-mono text-xs">
-            <h4 className="font-bold text-[#1C1917] tracking-wider uppercase text-[11px]">Resources</h4>
+            <h4 className="font-bold text-[#1C1917] tracking-wider uppercase text-[11px]">Resources &amp; Legal</h4>
             <ul className="space-y-2 text-[#57534E]">
               <li>
-                <a href="#faq" className="hover:text-[#5865F2] transition-colors">
-                  Documentation &amp; FAQ
-                </a>
+                <Link href="/docs" className="hover:text-[#5865F2] transition-colors">
+                  Documentation &amp; Guides
+                </Link>
+              </li>
+              <li>
+                <Link href="/status" className="hover:text-[#5865F2] transition-colors">
+                  Live System Status
+                </Link>
+              </li>
+              <li>
+                <Link href="/changelog" className="hover:text-[#5865F2] transition-colors">
+                  Changelog &amp; Releases
+                </Link>
+              </li>
+              <li>
+                <Link href="/terms" className="hover:text-[#5865F2] transition-colors">
+                  Terms of Service
+                </Link>
+              </li>
+              <li>
+                <Link href="/privacy" className="hover:text-[#5865F2] transition-colors">
+                  Privacy Policy
+                </Link>
               </li>
               <li>
                 <a
@@ -128,11 +151,6 @@ export function Footer({ onOpenInvite }: FooterProps) {
                 >
                   GitHub Repository ↗
                 </a>
-              </li>
-              <li>
-                <Link href="/privacy" className="hover:text-[#5865F2] transition-colors">
-                  Privacy Policy &amp; Terms
-                </Link>
               </li>
               <li>
                 <button

@@ -114,6 +114,13 @@ export function DashboardSidebar({ guild }: DashboardSidebarProps) {
           href: `${baseUrl}/voice`,
           icon: Radio,
         },
+        {
+          name: '28 Service Modules',
+          href: `${baseUrl}/module/build`,
+          icon: Zap,
+          badge: '28 LIVE',
+          badgeColor: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
+        },
       ],
     },
     {
